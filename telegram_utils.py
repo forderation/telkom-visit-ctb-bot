@@ -7,9 +7,10 @@
 Base methods for calendar keyboard creation and processing.
 """
 
-from telegram import InlineKeyboardButton, InlineKeyboardMarkup, ReplyKeyboardRemove
-import datetime
 import calendar
+import datetime
+
+from telegram import InlineKeyboardButton, InlineKeyboardMarkup
 
 
 def create_callback_data(action, year, month, day):
@@ -30,8 +31,10 @@ def create_calendar(year=None, month=None):
     :return: Returns the InlineKeyboardMarkup object with the calendar.
     """
     now = datetime.datetime.now()
-    if year is None: year = now.year
-    if month is None: month = now.month
+    if year is None:
+        year = now.year
+    if month is None:
+        month = now.month
     data_ignore = create_callback_data("IGNORE", year, month, 0)
     keyboard = []
     # First row - Month and Year
@@ -61,11 +64,11 @@ def create_calendar(year=None, month=None):
     return InlineKeyboardMarkup(keyboard)
 
 
-def process_calendar_selection(bot, update):
+def process_calendar_selection(update, context):
     """
     Process the callback_query. This method generates a new calendar if forward or
     backward is pressed. This method should be called inside a CallbackQueryHandler.
-    :param telegram.Bot bot: The bot, as provided by the CallbackQueryHandler
+    :param telegram.Context context: The bot, as provided by the CallbackQueryHandler
     :param telegram.Update update: The update, as provided by the CallbackQueryHandler
     :return: Returns a tuple (Boolean,datetime.datetime), indicating if a date is selected
                 and returning the date if so.
@@ -75,26 +78,26 @@ def process_calendar_selection(bot, update):
     (action, year, month, day) = separate_callback_data(query.data)
     curr = datetime.datetime(int(year), int(month), 1)
     if action == "IGNORE":
-        bot.answer_callback_query(callback_query_id=query.id)
+        context.bot.answer_callback_query(callback_query_id=query.id)
     elif action == "DAY":
-        bot.edit_message_text(text=query.message.text,
-                              chat_id=query.message.chat_id,
-                              message_id=query.message.message_id
-                              )
+        context.bot.edit_message_text(text=query.message.text,
+                                      chat_id=query.message.chat_id,
+                                      message_id=query.message.message_id
+                                      )
         ret_data = True, datetime.datetime(int(year), int(month), int(day))
     elif action == "PREV-MONTH":
         pre = curr - datetime.timedelta(days=1)
-        bot.edit_message_text(text=query.message.text,
-                              chat_id=query.message.chat_id,
-                              message_id=query.message.message_id,
-                              reply_markup=create_calendar(int(pre.year), int(pre.month)))
+        context.bot.edit_message_text(text=query.message.text,
+                                      chat_id=query.message.chat_id,
+                                      message_id=query.message.message_id,
+                                      reply_markup=create_calendar(int(pre.year), int(pre.month)))
     elif action == "NEXT-MONTH":
         ne = curr + datetime.timedelta(days=31)
-        bot.edit_message_text(text=query.message.text,
-                              chat_id=query.message.chat_id,
-                              message_id=query.message.message_id,
-                              reply_markup=create_calendar(int(ne.year), int(ne.month)))
+        context.bot.edit_message_text(text=query.message.text,
+                                      chat_id=query.message.chat_id,
+                                      message_id=query.message.message_id,
+                                      reply_markup=create_calendar(int(ne.year), int(ne.month)))
     else:
-        bot.answer_callback_query(callback_query_id=query.id, text="Something went wrong!")
+        context.bot.answer_callback_query(callback_query_id=query.id, text="Something went wrong!")
         # UNKNOWN
     return ret_data
