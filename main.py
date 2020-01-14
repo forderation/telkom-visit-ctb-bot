@@ -14,68 +14,58 @@ logger = logging.getLogger(__name__)
 INPUT_CUST, DATE_VS, PHOTO_VS, STATE_VS, CONTACT_VS, NOT_CONTACT_VS = range(1, 7)
 
 
-def calendar_handler(update, context):
+def date_handler(update, context):
     update.message.reply_text(
         "Masukkan tanggal visit: ",
         reply_markup=telegram_utils.create_calendar()
     )
 
 
-def calendar_callback(update, context):
+def fullname(update):
+    user = update.callback_query.from_user
+    if user.first_name is None and user.last_name:
+        return user.last_name
+    elif user.last_name is None and user.first_name:
+        return user.first_name
+    elif user.last_name is None and user.first_name is None:
+        return "Anonymous"
+    else:
+        return user.first_name + " " + user.last_name
+
+
+def date_callback(update, context):
     selected, date = telegram_utils.process_calendar_selection(update, context)
-
-    def fullname():
-        user = update.callback_query.from_user
-        if user.first_name is None and user.last_name:
-            return user.last_name
-        elif user.last_name is None and user.first_name:
-            return user.first_name
-        elif user.last_name is None and user.first_name is None:
-            return "Anonymous"
-        else:
-            return user.first_name + " " + user.last_name
-
     if selected:
         context.bot.send_message(
             chat_id=update.callback_query.from_user.id,
-            text="Anda %s , Tanggal visit: %s" % (fullname(), date.strftime("%Y-%m-%d")),
+            text="Tanggal visit diterima: %s" % (date.strftime("%Y-%m-%d")),
             reply_markup=ReplyKeyboardRemove()
         )
-
-
-def choose_type_visit(update, context):
-    msg = "Silahkan pilih terlebih dahulu status hasil visit"
-    keyboard = [[InlineKeyboardButton("Contacted", callback_data="contacted"),
-                 InlineKeyboardButton("Not Contacted", callback_data="not_contacted")]]
-    keyboard_type_visit = InlineKeyboardMarkup(keyboard)
-    update.message.reply_text(msg, reply_markup=keyboard_type_visit)
-
-
-def type_visit_keyboard():
-    keyboard = [[InlineKeyboardButton("Contacted", callback_data="contacted"),
-                 InlineKeyboardButton("Not Contacted", callback_data="not_contacted")]]
-    return InlineKeyboardMarkup(keyboard)
-
-
-def choose_type_visit_callback(update, context):
-    query = update.callback_query
-    query.edit_message_text(text="Status visit terpilih: {}".format(query.data))
+        state_handler(update, context)
+        return STATE_VS
 
 
 def error(update, context):
     logger.warning('Update "%s" caused error "%s"', update, context.error)
 
 
-def start(context, update):
-    pass
+def start(update, context):
+    update.message.reply_text(
+        "---- Hallo selamat datang di bot visit-ctb telkom ----"
+    )
+    cust_number(update, context)
+    return INPUT_CUST
 
 
 def cust_number(update, context):
-    pass
+    update.message.reply_text("Masukkan terlebih dahulu Nomor Internet pelanggan: ")
 
 
-def input_cust_number(update, context):
-    pass
+def cust_callback(update, context):
+    cust_num = update.message.text
+    update.message.reply_text(text="Nomor Internet pelanggan diterima: {}".format(cust_num))
+    date_handler(update, context)
+    return DATE_VS
 
 
 def cancel_callback(update, context):
@@ -91,11 +81,20 @@ def photo_callback(update, context):
 
 
 def state_handler(update, context):
-    pass
+    msg = "Silahkan pilih terlebih dahulu status hasil visit"
+    keyboard = [[InlineKeyboardButton("Contacted", callback_data="contacted"),
+                 InlineKeyboardButton("Not Contacted", callback_data="not_contacted")]]
+    keyboard_type_visit = InlineKeyboardMarkup(keyboard)
+    context.bot.send_message(
+        chat_id=update.callback_query.from_user.id,
+        text=msg,
+        reply_markup=keyboard_type_visit
+    )
 
 
 def state_callback(update, context):
-    pass
+    query = update.callback_query
+    query.edit_message_text(text="Status visit terpilih: {}".format(query.data))
 
 
 def not_contact_callback(update, context):
@@ -122,14 +121,11 @@ if __name__ == "__main__":
         conv_handler = ConversationHandler(
             entry_points=[CommandHandler('start', start)],
             states={
-                INPUT_CUST: [MessageHandler(Filters.regex(r'\d+$'), cust_number),
-                             CommandHandler('input_cust', input_cust_number)],
-                DATE_VS: [MessageHandler(Filters.text, calendar_handler),
-                          CommandHandler('date_input', calendar_callback)],
+                INPUT_CUST: [MessageHandler(Filters.regex(r'\d+$'), cust_callback)],
+                DATE_VS: [CallbackQueryHandler(date_callback)],
                 PHOTO_VS: [MessageHandler(Filters.photo, photo_handler),
                            CommandHandler('photo_input', photo_callback)],
-                STATE_VS: [MessageHandler(Filters.text, state_handler),
-                           CommandHandler('state_input', state_callback)],
+                STATE_VS: [CallbackQueryHandler(state_callback)],
                 CONTACT_VS: [MessageHandler(Filters.text, contact_handler),
                              CommandHandler('contact_input', contact_callback)],
                 NOT_CONTACT_VS: [MessageHandler(Filters.text, not_contact_handler),
@@ -137,8 +133,7 @@ if __name__ == "__main__":
             },
             fallbacks=[CommandHandler('cancel', cancel_callback)]
         )
-        up.dispatcher.add_handler(CommandHandler("choose_type_visit", choose_type_visit))
-        up.dispatcher.add_handler(CallbackQueryHandler(choose_type_visit_callback))
+        up.dispatcher.add_handler(conv_handler)
         up.dispatcher.add_error_handler(error)
         up.start_polling()
         up.idle()
