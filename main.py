@@ -23,11 +23,22 @@ def calendar_handler(update, context):
 
 def calendar_callback(update, context):
     selected, date = telegram_utils.process_calendar_selection(update, context)
-    full_name = str(update.callback_query.from_user.first_name) + str(update.callback_query.from_user.last_name)
+
+    def fullname():
+        user = update.callback_query.from_user
+        if user.first_name is None and user.last_name:
+            return user.last_name
+        elif user.last_name is None and user.first_name:
+            return user.first_name
+        elif user.last_name is None and user.first_name is None:
+            return "Anonymous"
+        else:
+            return user.first_name + " " + user.last_name
+
     if selected:
         context.bot.send_message(
             chat_id=update.callback_query.from_user.id,
-            text="Anda %s , Tanggal visit: %s" % (full_name, date.strftime("%Y-%m-%d")),
+            text="Anda %s , Tanggal visit: %s" % (fullname(), date.strftime("%Y-%m-%d")),
             reply_markup=ReplyKeyboardRemove()
         )
 
@@ -108,8 +119,6 @@ if __name__ == "__main__":
         print("Token API kosong, tidak dapat menangani bot")
     else:
         up = Updater(TOKEN, use_context=True)
-        # up.dispatcher.add_handler(CommandHandler("calendar", calendar_handler))
-        # up.dispatcher.add_handler(CallbackQueryHandler(calendar_callback))
         conv_handler = ConversationHandler(
             entry_points=[CommandHandler('start', start)],
             states={
