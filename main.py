@@ -1,7 +1,7 @@
 import logging
 from telegram.ext import Updater, CallbackQueryHandler, CommandHandler, ConversationHandler, Filters, MessageHandler
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup
-from telegram import ReplyKeyboardRemove
+from telegram import ReplyKeyboardRemove, ReplyMarkup
 import config
 import telegram_utils
 
@@ -181,17 +181,15 @@ def confirm_handler(update, context):
 def confirm_callback(update, context):
     query = update.callback_query
     state = query.data
-    query.edit_message_text(text="Hasil konfirmasi: {}".format(state))
     if state == "benar":
         context.bot.send_message(
             chat_id=update.callback_query.from_user.id,
             text="Data visit berhasil disimpan",
-            reply_markup=ReplyKeyboardRemove()
+            reply_markup=ReplyMarkup()
         )
         return ConversationHandler.END
     elif state == "salah":
-        # TODO
-        pass
+        start(update, context)
 
 
 def other_handler(update, context):
