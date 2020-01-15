@@ -11,16 +11,23 @@ logging.basicConfig(
     level=logging.INFO
 )
 logger = logging.getLogger(__name__)
-INPUT_CUST, DATE_VS, PHOTO_VS, STATE_VS, CONTACT_VS, NOT_CONTACT_VS, CONFIRM = range(1, 8)
+INPUT_CUST, DATE_VS, PHOTO_VS, STATE_VS, CONTACT_VS, NOT_CONTACT_VS, OTHER_DESC, CONFIRM, ADD_CONFIRM = range(1, 10)
 option_contacted = ["kemahalan", "tagihan melonjak", "jarang dipakai", "kendala keuangan", "lupa bayar",
                     "pindah ke kompetitor", "sudah ada internet lain", "tidak sempat bayar (sibuk)",
                     "tidak tahu tagihan", "lambat", "putus", "tidak bisa browsing / GGN",
                     "gangguan belum terselesaikan", "internet belum aktif", "tidak merasa pasang"]
+data_recap = {
+    "nip": "",
+    "date": "",
+    "state": "",
+    "voc": "",
+    "other": "",
+    "photo": ""
+}
 
 
 def date_handler(update, context):
-    context.bot.send_message(
-        chat_id=update.effective_chat.id,
+    update.message.reply_text(
         text="Masukkan tanggal visit: ",
         reply_markup=telegram_utils.create_calendar()
     )
@@ -41,17 +48,15 @@ def fullname(update):
 def date_callback(update, context):
     selected, date = telegram_utils.process_calendar_selection(update, context)
     if selected:
+        date = date.strftime("%Y-%m-%d")
         context.bot.send_message(
-            chat_id=update.callback_query.from_user.id,
-            text="Tanggal visit : %s" % (date.strftime("%Y-%m-%d")),
+            chat_id=update.effective_chat.id,
+            text="Tanggal visit : %s" % date,
             reply_markup=ReplyKeyboardRemove()
         )
+        data_recap["date"] = date
         state_handler(update, context)
         return STATE_VS
-
-
-def error(update, context):
-    logger.warning('Update "%s" caused error "%s"', update, context.error)
 
 
 def start(update, context):
@@ -69,6 +74,7 @@ def cust_number(update, context):
 def cust_callback(update, context):
     cust_num = update.message.text
     update.message.reply_text(text="Nomor Internet pelanggan : {}".format(cust_num))
+    data_recap["nip"] = cust_num
     date_handler(update, context)
     return DATE_VS
 
@@ -102,6 +108,7 @@ def state_callback(update, context):
     query = update.callback_query
     state = query.data
     query.edit_message_text(text="Status visit : {}".format(state))
+    data_recap['state'] = state
     if state == "contacted":
         contact_handler(update, context)
         return CONTACT_VS
@@ -120,10 +127,11 @@ def not_contact_handler(update, context):
 
 def contact_callback(update, context):
     query = update.callback_query
-    state = query.data
-    query.edit_message_text(text="Hasil laporan visit : {}".format(state))
-    confirm_handler(update, context)
-    return CONFIRM
+    report_visit = query.data
+    query.edit_message_text(text="Hasil laporan visit : {}".format(report_visit))
+    data_recap['voc'] = report_visit
+    other_handler(update, context)
+    return OTHER_DESC
 
 
 def contact_handler(update, context):
@@ -140,16 +148,31 @@ def contact_handler(update, context):
 
 
 def fallback_handler(update, context):
+    logger.warning('Update "%s" caused error "%s"', update, context.error)
     update.message.reply_text(text="Error: Perintah tidak dikenali")
 
 
 def confirm_handler(update, context):
-    msg = "Apakah data yang anda isi sudah benar ?"
-    keyboard = [[InlineKeyboardButton("benar", callback_data="benar"),
-                 InlineKeyboardButton("salah", callback_data="salah")]]
+    recap_data = """
+    ----- rekap data input -----
+    nomor internet pelanggan : {} 
+    tanggal kunjungan : {}
+    hasil visit (VOC) ctb : {}
+    keterangan lain-lain : {}
+    foto kunjungan : {}
+    """.format(
+        data_recap["nip"],
+        data_recap["date"],
+        data_recap["voc"],
+        data_recap["other"],
+        data_recap["photo"]
+    )
+    msg = "Apakah data yang anda isi sudah benar ? \n{}".format(recap_data)
+    keyboard = [[InlineKeyboardButton("salah", callback_data="salah"),
+                 InlineKeyboardButton("benar", callback_data="benar")]]
     keyboard_type_visit = InlineKeyboardMarkup(keyboard)
     context.bot.send_message(
-        chat_id=update.callback_query.from_user.id,
+        chat_id=update.effective_chat.id,
         text=msg,
         reply_markup=keyboard_type_visit
     )
@@ -171,6 +194,46 @@ def confirm_callback(update, context):
         pass
 
 
+def other_handler(update, context):
+    msg = "Apakah ada informasi yang ingin ditambahkan (keterangan lain): ?"
+    keyboard = [[InlineKeyboardButton("tidak ada", callback_data="tidak ada"),
+                 InlineKeyboardButton("ya", callback_data="ya")]]
+    keyboard_type_visit = InlineKeyboardMarkup(keyboard)
+    context.bot.send_message(
+        chat_id=update.callback_query.from_user.id,
+        text=msg,
+        reply_markup=keyboard_type_visit
+    )
+
+
+def confirm_other_callback(update, context):
+    query = update.callback_query
+    state = query.data
+    query.edit_message_text(text="Keterangan lain-lain : {}".format(state))
+    if state == "ya":
+        add_other_handler(update, context)
+        return ADD_CONFIRM
+    elif state == "tidak ada":
+        confirm_handler(update, context)
+        return CONFIRM
+
+
+def add_other_handler(update, context):
+    msg = "Masukkan keterangan lain-lain: "
+    context.bot.send_message(
+        chat_id=update.callback_query.from_user.id,
+        text=msg
+    )
+
+
+def add_other_callback(update, context):
+    other_desc = update.message.text
+    update.message.reply_text(text="Keterangan lain-lain : {}".format(other_desc))
+    data_recap['other'] = other_desc
+    confirm_handler(update, context)
+    return CONFIRM
+
+
 if __name__ == "__main__":
     if TOKEN == "":
         print("Token API kosong, tidak dapat menangani bot")
@@ -186,12 +249,14 @@ if __name__ == "__main__":
                 STATE_VS: [CallbackQueryHandler(state_callback)],
                 CONTACT_VS: [CallbackQueryHandler(contact_callback)],
                 NOT_CONTACT_VS: [CallbackQueryHandler(not_contact_callback)],
+                OTHER_DESC: [CallbackQueryHandler(confirm_other_callback)],
+                ADD_CONFIRM: [MessageHandler(Filters.text, add_other_callback)],
                 CONFIRM: [CallbackQueryHandler(confirm_callback)]
             },
             fallbacks=[CommandHandler('cancel', cancel_callback),
                        MessageHandler(Filters.all, fallback_handler)]
         )
         up.dispatcher.add_handler(conv_handler)
-        up.dispatcher.add_error_handler(error)
+        up.dispatcher.add_error_handler(fallback_handler)
         up.start_polling()
         up.idle()
