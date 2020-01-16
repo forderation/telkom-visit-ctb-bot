@@ -18,6 +18,35 @@ option_contacted = ["kemahalan", "tagihan melonjak", "jarang dipakai", "kendala 
                     "gangguan belum terselesaikan", "internet belum aktif", "tidak merasa pasang"]
 option_not_contacted = ["alamat tidak ada", "bukan pelanggan yang bersangkutan", "tidak bertemu penghuni",
                         "rumah tidak berpenghuni"]
+kode_cn = """<pre>
+KODE | KETERANGAN CONTACTED
+--------------------------------
+A.C.1 | Jarang dipakai
+A.C.2 | Kendala Keuangan
+A.C.3 | Lupa Bayar
+A.C.4 | Pindah ke kompetitor
+A.C.5 | Sudah ada internet lain
+A.C.6 | Sudah bayar
+A.C.7 | Tidak sempat bayar sibuk
+A.C.8 | Tidak tahu tagihan
+A.PC.1 | Kemahalan
+A.PC.2 | Tagihan melonjak
+A.PD.1 | Product
+A.PD.2 | Putus
+A.PD.3 | Tidak bisa browsing/GGN
+A.S.1 | Gangguan belum diselesaikan
+A.S.1 | Internet belum aktif
+A.S.1 | Tidak merasa pasang
+</pre>"""
+kode_nc = """<pre>
+KODE | KETERANGAN NOT CONTACTED
+------------------------------------
+B.1	 |	Alamat tidak ada
+B.2	 |	Bukan pelanggan yang tersedia
+B.3	 |	Tidak bertemu penghuni
+B.4	 |	Rumah tidak berpenghuni
+</pre>
+"""
 data_recap = {
     "nip": "",
     "date": "",
@@ -62,7 +91,7 @@ def date_callback(update, context):
 def start(update, context):
     context.bot.send_message(
         chat_id=update.effective_chat.id,
-        text="---- Hallo selamat datang di bot visit-ctb telkom ----",
+        text=kode_cn,
         reply_markup=ReplyKeyboardRemove()
     )
     cust_number(update, context)
@@ -270,6 +299,22 @@ def add_other_callback(update, context):
     return PHOTO_VS
 
 
+def kode_contact(update, context):
+    context.bot.send_message(
+        chat_id=update.effective_chat.id,
+        text=kode_cn,
+        parse_mode="HTML"
+    )
+
+
+def kode_not_contact(update, context):
+    context.bot.send_message(
+        chat_id=update.effective_chat.id,
+        text=kode_nc,
+        parse_mode="HTML"
+    )
+
+
 if __name__ == "__main__":
     if TOKEN == "":
         print("Token API kosong, tidak dapat menangani bot")
@@ -294,5 +339,7 @@ if __name__ == "__main__":
         )
         up.dispatcher.add_handler(conv_handler)
         up.dispatcher.add_error_handler(fallback_handler)
+        up.dispatcher.add_handler(CommandHandler('code_ct', kode_contact))
+        up.dispatcher.add_handler(CommandHandler('code_nct', kode_not_contact))
         up.start_polling()
         up.idle()
