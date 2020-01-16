@@ -16,6 +16,8 @@ option_contacted = ["kemahalan", "tagihan melonjak", "jarang dipakai", "kendala 
                     "pindah ke kompetitor", "sudah ada internet lain", "tidak sempat bayar (sibuk)",
                     "tidak tahu tagihan", "lambat", "putus", "tidak bisa browsing / GGN",
                     "gangguan belum terselesaikan", "internet belum aktif", "tidak merasa pasang"]
+option_not_contacted = ["alamat tidak ada", "bukan pelanggan yang bersangkutan", "tidak bertemu penghuni",
+                        "rumah tidak berpenghuni"]
 data_recap = {
     "nip": "",
     "date": "",
@@ -94,18 +96,31 @@ def cancel_callback(update, context):
 
 
 def photo_handler(update, context):
-    pass
+    context.bot.send_message(
+        chat_id=update.effective_chat.id,
+        text="Silahkan upload foto bukti visit : "
+    )
+    return PHOTO_VS
 
 
 def photo_callback(update, context):
-    user = update.message.from_user
     photo_file = update.message.photo[-1].get_file()
+    # print(update.effective_message)
     photo_file.download('user_photo.jpg')
+    photo_id = update.message.photo[-1].file_id
+    photo_path = context.bot.get_file(photo_id).file_path
+    photo_uri_get = photo_path.split("/")
+    data_recap["photo"] = photo_uri_get[-2] + "/" + photo_uri_get[-1]
     context.bot.send_message(
         chat_id=update.effective_chat.id,
-
+        text="Upload foto diterima : "
     )
-    pass
+    context.bot.send_photo(
+        chat_id=update.effective_chat.id,
+        photo=photo_id
+    )
+    confirm_handler(update, context)
+    return CONFIRM
 
 
 def state_handler(update, context):
@@ -138,7 +153,16 @@ def not_contact_callback(update, context):
 
 
 def not_contact_handler(update, context):
-    pass
+    msg = "Pilih hasil laporan visit (not contacted):"
+    keyboard = [
+        [InlineKeyboardButton(value, callback_data=value)] for value in option_contacted
+    ]
+    keyboard_type_visit = InlineKeyboardMarkup(keyboard)
+    context.bot.send_message(
+        chat_id=update.effective_chat.id,
+        text=msg,
+        reply_markup=keyboard_type_visit
+    )
 
 
 def contact_callback(update, context):
@@ -151,7 +175,7 @@ def contact_callback(update, context):
 
 
 def contact_handler(update, context):
-    msg = "Pilih hasil laporan visit :"
+    msg = "Pilih hasil laporan visit (contacted):"
     keyboard = [
         [InlineKeyboardButton(value, callback_data=value)] for value in option_contacted
     ]
@@ -178,7 +202,7 @@ def confirm_handler(update, context):
                  "\nhasil visit (VOC) ctb : {}" \
                  "\nketerangan lain-lain : {}" \
                  "\nfoto kunjungan : {}".format(data_recap["nip"], data_recap["date"], data_recap["voc"],
-                                                data_recap["other"], data_recap["photo"]                                              )
+                                                data_recap["other"], data_recap["photo"])
     msg = "Apakah data yang anda isi sudah benar ? \n{}".format(recap_data)
     keyboard = [[InlineKeyboardButton("salah (input ulang)", callback_data="salah"),
                  InlineKeyboardButton("benar", callback_data="benar")]]
@@ -242,8 +266,8 @@ def add_other_handler(update, context):
 def add_other_callback(update, context):
     other_desc = update.message.text
     data_recap['other'] = other_desc
-    confirm_handler(update, context)
-    return CONFIRM
+    photo_handler(update, context)
+    return PHOTO_VS
 
 
 if __name__ == "__main__":
