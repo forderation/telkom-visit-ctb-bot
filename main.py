@@ -1,13 +1,20 @@
+import datetime
 import logging
 import os
 
-from telegram.ext import Updater, CallbackQueryHandler, CommandHandler, ConversationHandler, Filters, MessageHandler
-from telegram import InlineKeyboardButton, InlineKeyboardMarkup
-from telegram import ReplyKeyboardRemove
-import datetime
-import config
-import telegram_utils
+from telegram.ext import Updater, CommandHandler, Filters, MessageHandler
 
+import config
+from session_chat import Session
+
+# command list
+# input_visit - input data visit
+# submit_visit - submit data visit ke bot
+# help - lihat contoh penggunaan bot
+# code_ct - daftar kode untuk status contacted
+# code_nct - daftar kode untuk status not contacted
+
+session = Session()
 TOKEN = config.token
 logging.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
@@ -44,16 +51,6 @@ B.3	 |	Tidak bertemu penghuni
 B.4	 |	Rumah tidak berpenghuni
 </pre>
 """
-data_recap = {
-    "fullname": "",
-    "nip": "",
-    "date": "",
-    "state": "",
-    "voc_code": "",
-    "result_voc": "",
-    "other": "",
-    "photo": []
-}
 
 
 def fullname(update):
@@ -69,37 +66,38 @@ def fullname(update):
 
 
 def cancel_callback(update, context):
+    user_id = str(update.message.from_user.id)
+    username = update.message.from_user.username
+    if session.is_user_active(user_id):
+        msg_resp = "Anda belum pernah menginput data visit"
+    else:
+        session.remove_user(user_id)
+        msg_resp = "Berhasil membatalkan input data visit"
     context.bot.send_message(
         chat_id=update.effective_chat.id,
-        text="Sesi input visit CTB berakhir, tekan /input_visit untuk mengisi data visit kembali"
+        text="@{} {}".format(username, msg_resp)
     )
-    return ConversationHandler.END
 
 
-def photo_callback(update, context):
-    photo_file = update.message.photo[-1].get_file()
-    # print(update.effective_message)
-    photo_file.download('user_photo.jpg')
-    photo_id = update.message.photo[-1].file_id
-    photo_path = context.bot.get_file(photo_id).file_path
-    photo_uri_get = photo_path.split("/")
-    data_recap["photo"] = photo_uri_get[-2] + "/" + photo_uri_get[-1]
-    context.bot.send_message(
-        chat_id=update.effective_chat.id,
-        text="Upload foto diterima : "
-    )
-    context.bot.send_photo(
-        chat_id=update.effective_chat.id,
-        photo=photo_id
-    )
+# def photo_callback(update, context):
+#     photo_file = update.message.photo[-1].get_file()
+#     # print(update.effective_message)
+#     photo_file.download('user_photo.jpg')
+#     photo_id = update.message.photo[-1].file_id
+#     photo_path = context.bot.get_file(photo_id).file_path
+#     photo_uri_get = photo_path.split("/")
+#     context.bot.send_message(
+#         chat_id=update.effective_chat.id,
+#         text="Upload foto diterima : "
+#     )
+#     context.bot.send_photo(
+#         chat_id=update.effective_chat.id,
+#         photo=photo_id
+#     )
 
 
 def fallback_handler(update, context):
     logger.warning('Update "%s" caused error "%s"', update, context.error)
-    context.bot.send_message(
-        chat_id=update.effective_chat.id,
-        text="Error: Perintah tidak dikenali : %s" % context.error
-    )
 
 
 def kode_contact(update, context):
@@ -119,38 +117,21 @@ def kode_not_contact(update, context):
 
 
 def start_handler(update, context):
-    pass
-
-
-def submit_photo(update, context):
-    user_id = str(update.message.from_user.id)
-    cur_dir = os.getcwd()
-    user_path = cur_dir + "/res/img/" + user_id
-    if not (os.path.exists(user_path)):
-        os.makedirs(user_path, 0o777)
-    for photo_id in data_recap["photo"]:
-        context.bot.get_file(photo_id).download(user_path + "/" + photo_id + ".jpg")
+    msg = 'Silahkan input dalam bentuk format "nomor internet pelanggan;kode hasil voc;keterangan lain-lain".' \
+          'pastikan karakter ; berjumlah 2.'
+    exam = "\nContoh: 152504308719; A.PD.3; rumah tutup yns kerja semua cp08191341232"
     context.bot.send_message(
         chat_id=update.effective_chat.id,
-        text="Submit foto berhasil @" + str(update.message.from_user.username)
+        text=msg + exam
     )
-    return ConversationHandler.END
 
 
 def photo_visit_callback(update, context):
-    photo_id = update.message.photo[-1].file_id
-    data_recap["photo"].append(photo_id)
-    context.bot.send_message(
-        chat_id=update.effective_chat.id,
-        text="Upload foto diterima : " + photo_id
-    )
-
-
-def photo_visit_handler(update, context):
-    context.bot.send_message(
-        chat_id=update.effective_chat.id,
-        text="Silahkan upload bukti foto visit: "
-    )
+    user_id = str(update.message.from_user.id)
+    if session.is_user_active(user_id):
+        if session.is_visited(user_id):
+            photo_id = update.message.photo[-1].file_id
+            session.add_photo(user_id, photo_id)
 
 
 def msg_error(msg, update, context):
@@ -161,7 +142,9 @@ def msg_error(msg, update, context):
 
 
 def input_visit_callback(update, context):
-    resp = update.message.text.split(";")
+    resp = update.message.text.replace('/input_visit', '').replace('@telkom_visit_ctb_bot', '').split(";")
+    user_id = str(update.message.from_user.id)
+    username = update.message.from_user.username
     if len(resp) == 3:
         try:
             ip_cust = int(resp[0])
@@ -182,45 +165,50 @@ def input_visit_callback(update, context):
             state_vs = "not contacted"
             mapped_vs = config.map_nct[visit_code]
         date_now = datetime.datetime.today()
-        date_vs = "{}-{}-{}".format(date_now.day, date_now.month, date_now.year)
-        other_vs = resp[2].strip() if resp[2] else "kosong"
-        msg_resp = "----- input data diterima -----" \
-                   "\nnomor internet pelanggan: {}" \
-                   "\ntanggal: {}" \
-                   "\nstatus visit: {}" \
-                   "\nkode visit: {}" \
-                   "\nhasil visit: {}" \
-                   "\nketerangan lain-lain: {}".format(ip_cust, date_vs, state_vs, visit_code, mapped_vs, other_vs)
-        data_recap["fullname"] = fullname(update)
-        data_recap["nip"] = str(ip_cust)
-        data_recap["date"] = "{}-{}-{}".format(date_now.year, date_now.month, date_now.day)
-        data_recap["voc_code"] = visit_code
-        data_recap["state"] = state_vs
-        data_recap["result_voc"] = mapped_vs
-        data_recap["other"] = other_vs
+        if session.is_user_active(user_id):
+            msg_resp = "@{} sesi input visit anda sudah ada silahkan submit terlebih dahulu".format(username)
+        else:
+            date = "{}-{}-{}".format(date_now.year, date_now.month, date_now.day)
+            other_vs = resp[2].strip() if resp[2] else "kosong"
+            session.add_user(user_id, fullname(update), str(ip_cust), date, visit_code, state_vs, mapped_vs, other_vs)
+            msg_resp = "@{} input visit diterima:\n{}".format(username, session.get_desc_user(user_id))
         context.bot.send_message(
             chat_id=update.effective_chat.id,
             text=msg_resp
         )
-        photo_visit_handler(update, context)
-        return PHOTO_VISIT
     else:
-        msg_error("format input salah, pastikan karakter ; berjumlah 2", update, context)
+        msg_error("@{} format input salah, pastikan karakter ; \"titik koma\" berjumlah 2".format(username), update,
+                  context)
 
 
-def input_visit(update, context):
-    msg = 'Silahkan input dalam bentuk format "nomor internet pelanggan;kode hasil voc;keterangan lain-lain".' \
-          'pastikan karakter ; berjumlah 2.'
-    exam = "\nContoh: 152504308719; A.PD.3; rumah tutup yns kerja semua cp08191341232"
+def submit_visit(update, context):
+    username = update.message.from_user.username
+    user_id = str(update.message.from_user.id)
+    if not (session.is_user_active(user_id)):
+        msg_resp = "Anda belum menginput data visit"
+        context.bot.send_message(
+            chat_id=update.effective_chat.id,
+            text="@{} {}".format(username, msg_resp)
+        )
+        return
+    if not (session.is_submitted_photo(user_id)):
+        msg_resp = "Anda belum mengupload bukti foto visit"
+        context.bot.send_message(
+            chat_id=update.effective_chat.id,
+            text="@{} {}".format(username, msg_resp)
+        )
+        return
+    cur_dir = os.getcwd()
+    user_path = cur_dir + "/res/img/" + user_id
+    if not (os.path.exists(user_path)):
+        os.makedirs(user_path, 0o777)
+    for photo_id in session.get_photo(user_id):
+        context.bot.get_file(photo_id).download(user_path + "/" + photo_id + ".jpg")
+    session.remove_user(user_id)
     context.bot.send_message(
         chat_id=update.effective_chat.id,
-        text=msg + exam
+        text="Submit data berhasil @" + username
     )
-    return INPUT_VISIT
-
-
-def confirm_callback(update, context):
-    pass
 
 
 if __name__ == "__main__":
@@ -228,22 +216,13 @@ if __name__ == "__main__":
         print("Token API kosong, tidak dapat menangani bot")
     else:
         up = Updater(TOKEN, use_context=True)
-        conv_handler = ConversationHandler(
-            entry_points=[CommandHandler('input_visit', input_visit)],
-            states={
-                INPUT_VISIT: [MessageHandler(Filters.text, input_visit_callback)],
-                PHOTO_VISIT: [MessageHandler(Filters.photo, photo_visit_callback),
-                              CommandHandler('submit_photo', submit_photo)]
-            },
-            fallbacks=[CommandHandler('cancel_visit', cancel_callback),
-                       CommandHandler('code_ct', kode_contact),
-                       CommandHandler('code_nct', kode_not_contact),
-                       MessageHandler(Filters.all, fallback_handler)],
-            allow_reentry=True
-        )
-        up.dispatcher.add_handler(conv_handler)
         up.dispatcher.add_error_handler(fallback_handler)
         up.dispatcher.add_handler(CommandHandler('start', start_handler))
+        up.dispatcher.add_handler(CommandHandler('help', start_handler))
+        up.dispatcher.add_handler(MessageHandler(Filters.photo, photo_visit_callback))
+        up.dispatcher.add_handler(CommandHandler('cancel', cancel_callback))
+        up.dispatcher.add_handler(CommandHandler('input_visit', input_visit_callback))
+        up.dispatcher.add_handler(CommandHandler('submit_visit', submit_visit))
         up.dispatcher.add_handler(CommandHandler('code_ct', kode_contact))
         up.dispatcher.add_handler(CommandHandler('code_nct', kode_not_contact))
         up.start_polling()
