@@ -6,3 +6,4 @@ pyvenv.cfg
 /Lib
 .idea
 /res
+report.csv
