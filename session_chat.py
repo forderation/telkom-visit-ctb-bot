@@ -5,15 +5,14 @@ class Session:
     "muzaki" : {
         "is_visit_input": True,
         "is_photo_input": False,
-        "fullname" : "kharisma muzaki",
-        "id" : "123456789",
-        "nip" : "152504302224",
-        "alamat" : "perum. sekar asri blok d23",
-        "kode_visit" : "",
-        "status_visit" : "",
-        "keterangan_visit" : "",
-        "keterangan_lain_lain" : ",
-        "photo" : []
+        "fullname": fullname,
+        "nip": nip,
+        "date": date,
+        "voc_code": voc_code,
+        "voc_state": voc_state,
+        "result_voc": result_voc,
+        "other_desc": other_desc,
+        "photo": []
     }
     }
     """
@@ -83,3 +82,6 @@ class Session:
 
     def is_submitted_photo(self, user_id):
         return self._session[user_id]["is_photo_input"]
+
+    def get_session(self, user_id):
+        return self._session[user_id]

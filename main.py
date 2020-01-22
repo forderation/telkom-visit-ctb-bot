@@ -1,19 +1,22 @@
 import datetime
 import logging
 import os
+import pandas as pd
 
 from telegram.ext import Updater, CommandHandler, Filters, MessageHandler
-
+from database import DBHelper
 import config
 from session_chat import Session
 
 # command list
-# input_visit - input data visit
+# input_visit - memulai sesi input data visit
 # submit_visit - submit data visit ke bot
 # help - lihat contoh penggunaan bot
+# cancel - membatalkan sesi input visit
 # code_ct - daftar kode untuk status contacted
 # code_nct - daftar kode untuk status not contacted
-
+# get_csv - mendapatkan laporan visit dalam bentuk csv
+db = DBHelper()
 session = Session()
 TOKEN = config.token
 logging.basicConfig(
@@ -204,10 +207,28 @@ def submit_visit(update, context):
         os.makedirs(user_path, 0o777)
     for photo_id in session.get_photo(user_id):
         context.bot.get_file(photo_id).download(user_path + "/" + photo_id + ".jpg")
+    visit_id = db.add_visit(session.get_session(user_id))
+    db.add_photo(session.get_photo(user_id), user_id, visit_id)
     session.remove_user(user_id)
     context.bot.send_message(
         chat_id=update.effective_chat.id,
         text="Submit data berhasil @" + username
+    )
+    print(db.get_photo())
+
+
+def get_csv(update, context):
+    visits = db.get_visit()
+    df = pd.DataFrame(
+        visits,
+        columns=["id", "nama visitor", "tanggal visit", "nomor internet pelanggan", "status visit",
+                 "hasil visit", "kode visit", "keterangan lain-lain"]
+    )
+    df.to_csv("report.csv", index=False)
+    context.bot.send_document(
+        chat_id=update.effective_chat.id,
+        document=open("report.csv", 'rb'),
+        filename="laporan.csv"
     )
 
 
@@ -215,6 +236,7 @@ if __name__ == "__main__":
     if TOKEN == "":
         print("Token API kosong, tidak dapat menangani bot")
     else:
+        db.setup()
         up = Updater(TOKEN, use_context=True)
         up.dispatcher.add_error_handler(fallback_handler)
         up.dispatcher.add_handler(CommandHandler('start', start_handler))
@@ -223,6 +245,7 @@ if __name__ == "__main__":
         up.dispatcher.add_handler(CommandHandler('cancel', cancel_callback))
         up.dispatcher.add_handler(CommandHandler('input_visit', input_visit_callback))
         up.dispatcher.add_handler(CommandHandler('submit_visit', submit_visit))
+        up.dispatcher.add_handler(CommandHandler('get_csv', get_csv))
         up.dispatcher.add_handler(CommandHandler('code_ct', kode_contact))
         up.dispatcher.add_handler(CommandHandler('code_nct', kode_not_contact))
         up.start_polling()
