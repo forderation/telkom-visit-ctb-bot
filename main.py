@@ -3,7 +3,7 @@ import logging
 import os
 import pandas as pd
 
-from telegram.ext import Updater, CommandHandler, Filters, MessageHandler
+from telegram.ext import Updater, CommandHandler, Filters, MessageHandler, ConversationHandler
 from database import DBHelper
 import config
 from session_chat import Session
@@ -16,6 +16,8 @@ from session_chat import Session
 # code_ct - daftar kode untuk status contacted
 # code_nct - daftar kode untuk status not contacted
 # get_csv - mendapatkan laporan visit dalam bentuk csv
+# case conversation handler admin
+PASSWD_ADMIN = 1
 db = DBHelper()
 session = Session()
 TOKEN = config.token
@@ -120,9 +122,10 @@ def kode_not_contact(update, context):
 
 
 def start_handler(update, context):
-    msg = 'Silahkan input dalam bentuk format "nomor internet pelanggan;kode hasil voc;keterangan lain-lain".' \
-          'pastikan karakter ; berjumlah 2.'
-    exam = "\nContoh: 152504308719; A.PD.3; rumah tutup yns kerja semua cp08191341232"
+    msg = "Silahkan input dalam bentuk format \"/input_visit nomor internet pelanggan;kode hasil voc;keterangan " \
+          "lain-lain\"." \
+          "pastikan karakter ; berjumlah 2."
+    exam = "\nContoh: /input_visit 152504308719; A.PD.3; rumah tutup yns kerja semua cp08191341232"
     context.bot.send_message(
         chat_id=update.effective_chat.id,
         text=msg + exam
@@ -232,12 +235,52 @@ def get_csv(update, context):
     )
 
 
+def login_admin(update, context):
+    passwd = update.message.text
+    respd = db.check_password(passwd)
+    if respd is None:
+        msg_resp = "Password anda salah"
+    else:
+        msg_resp = "Login berhasil"
+    context.bot.send_message(
+        chat_id=update.effective_chat.id,
+        text=msg_resp
+    )
+
+
+def admin_start(update, context):
+    context.bot.send_message(
+        chat_id=update.effective_chat.id,
+        text="Masukkan password admin : "
+    )
+    return PASSWD_ADMIN
+
+
+def admin_logout(update, context):
+    pass
+
+
 if __name__ == "__main__":
     if TOKEN == "":
         print("Token API kosong, tidak dapat menangani bot")
     else:
+        print("Doing setup database ...")
         db.setup()
+        db.seeder_password()
+        print("Setup database done")
+        print("Connecting to telegram server ...")
         up = Updater(TOKEN, use_context=True)
+        print("Connected to telegram server")
+        print("Making conversation ...")
+        conv = ConversationHandler(
+            entry_points=[CommandHandler('start_adm1n', admin_start)],
+            allow_reentry=True,
+            fallbacks=[CommandHandler('end_adm1n', admin_logout)],
+            states={
+                PASSWD_ADMIN: [MessageHandler(Filters.text, login_admin)]
+            }
+        )
+        up.dispatcher.add_handler(conv)
         up.dispatcher.add_error_handler(fallback_handler)
         up.dispatcher.add_handler(CommandHandler('start', start_handler))
         up.dispatcher.add_handler(CommandHandler('help', start_handler))
@@ -248,5 +291,7 @@ if __name__ == "__main__":
         up.dispatcher.add_handler(CommandHandler('get_csv', get_csv))
         up.dispatcher.add_handler(CommandHandler('code_ct', kode_contact))
         up.dispatcher.add_handler(CommandHandler('code_nct', kode_not_contact))
+        print("Making conversation done")
         up.start_polling()
+        print("Chatbot already to use")
         up.idle()
