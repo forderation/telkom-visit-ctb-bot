@@ -1,50 +1,23 @@
 import sqlite3
+from ddl import ddl
 
 
 class DBHelper:
 
-    def __init__(self, dbname="visit_ctb.sqlite"):
+    def __init__(self, dbname="visit_ctb2.sqlite"):
         self.dbname = dbname
         self.conn = sqlite3.connect(dbname, check_same_thread=False)
-        self.TB_VISIT = "TABLE_VISIT"
-        self.TB_PHOTO = "TABLE_PHOTO"
-        self.TB_ADMIN = "TABLE_ADMIN"
-        self.TB_OPTION = "TABLE_OPTION"
-        self.TB_SEED = "TABLE_SEEDER"
+        self.VISIT = "VISIT_HIST"
+        self.PHOTO = "PHOTO_VISIT"
+        self.ADMIN = "ADMIN"
+        self.CATEGORY = "CATEGORY_RESULT"
+        self.STATE = "STATE_VISIT"
+        self.RESULT = "VISIT_RESULT"
+        self.VISITOR = "VISITOR"
+        self.cursor = self.conn.cursor()
 
     def setup(self):
-        stmt_table_option = "CREATE TABLE IF NOT EXISTS " + self.TB_OPTION + \
-                            " (id interger primary key, state_visit text not " \
-                            "null, front_code text not null, mid_code text not null, rear_code text not null, " \
-                            "result_visit text not null) "
-        stmt_table_visit = "CREATE TABLE IF NOT EXISTS " + \
-                           self.TB_VISIT + \
-                           "(visit_id integer primary key, visitor_name text not null, date_visit date not null, " \
-                           "nip text not null, option_id integer not null," \
-                           "other_desc text, FOREIGN KEY(option_id) REFERENCES " + self.TB_OPTION + "(id))"
-        stmt_table_photo = "CREATE TABLE IF NOT EXISTS " + \
-                           self.TB_PHOTO + \
-                           " (photo_id integer primary key," \
-                           "tele_photo_id text not null," \
-                           "visitor_id integer not null," \
-                           "visit_id integer not null," \
-                           "FOREIGN KEY(visit_id) REFERENCES " + \
-                           self.TB_VISIT + \
-                           "(visit_id)" \
-                           ")"
-        stmt_table_admin = "CREATE TABLE IF NOT EXISTS " + self.TB_ADMIN + \
-                           " (id integer primary key, password text " \
-                           "not null, last_login date, " \
-                           "username text) "
-        stmt_table_seed = "CREATE TABLE IF NOT EXISTS " + self.TB_SEED + \
-                          "(id integer primary key, name_seeder text " \
-                          "not null, date_seeding date not null, " \
-                          "state_seed integer not null) "
-        self.conn.execute(stmt_table_option)
-        self.conn.execute(stmt_table_visit)
-        self.conn.execute(stmt_table_photo)
-        self.conn.execute(stmt_table_admin)
-        self.conn.execute(stmt_table_seed)
+        self.conn.executescript(ddl)
         self.conn.commit()
 
     def seeder_password(self):
@@ -107,3 +80,7 @@ class DBHelper:
         cursor = self.conn.cursor()
         cursor.execute("SELECT * FROM " + self.TB_VISIT)
         return cursor.fetchall()
+
+
+db = DBHelper()
+db.setup()

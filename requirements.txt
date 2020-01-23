@@ -2,10 +2,14 @@ certifi==2019.11.28
 cffi==1.13.2
 cryptography==2.8
 future==0.18.2
+numpy==1.18.1
+pandas==0.25.3
 pyaes==1.6.1
 pyasn1==0.4.8
 pycparser==2.19
+python-dateutil==2.8.1
 python-telegram-bot==12.3.0
+pytz==2019.3
 rsa==4.0
 six==1.13.0
 Telethon==1.10.10
