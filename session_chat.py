@@ -22,7 +22,7 @@ class Session:
         self.input_vs = "input_visit"
 
     def is_user_active(self, user_id):
-        return True if user_id in self._session else False
+        return True if user_id in self._session.keys() else False
 
     def remove_user(self, user_id):
         if self.is_user_active(user_id):
@@ -30,19 +30,21 @@ class Session:
             return True
         return False
 
-    def add_user(self, user_id, fullname, nip, date, voc_code, voc_state, result_voc, other_desc):
+    def add_user(self, user_id, fullname, nip, date, voc_state, voc_category, result_voc, other_desc, idx_visit_code):
         self._session[user_id] = {
             "is_visit_input": True,
             "is_photo_input": False,
             "fullname": fullname,
             "nip": nip,
             "date": date,
-            "voc_code": voc_code,
             "voc_state": voc_state,
+            "voc_category": voc_category,
             "result_voc": result_voc,
             "other_desc": other_desc,
-            "photo": []
+            "photo": [],
+            "idx_visit_code": idx_visit_code,
         }
+        print(self._session)
 
     def add_photo(self, user_id, photo_id):
         self._session[user_id]["photo"].append(photo_id)
@@ -57,8 +59,10 @@ class Session:
         fullname = user["fullname"]
         nip = user["nip"]
         date = user["date"]
-        voc_code = user["voc_code"]
+        f, m, r = user["idx_visit_code"]
+        voc_code = f + m + r
         voc_state = user["voc_state"]
+        voc_category = user["voc_category"]
         result_voc = user["result_voc"]
         other_desc = user["other_desc"]
         msg = "nama penginput : {}" \
@@ -66,10 +70,12 @@ class Session:
               "\ntanggal input : {}" \
               "\nkode visit : {}" \
               "\nstatus visit : {}" \
+              "\nkategori visit: {}" \
               "\nhasil visit : {}" \
               "\nketerangan lain : {}" \
               "\njangan lupa untuk mengupload foto visit dan melakukan /submit_visit".format(fullname, nip, date,
                                                                                              voc_code, voc_state,
+                                                                                             voc_category,
                                                                                              result_voc, other_desc)
         return msg
 
