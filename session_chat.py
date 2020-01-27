@@ -30,13 +30,14 @@ class Session:
             return True
         return False
 
-    def add_user(self, user_id, fullname, nip, date, voc_state, voc_category, result_voc, other_desc, idx_visit_code):
+    def add_user(self, user_id, fullname, nip, date, voc_code ,voc_state, voc_category, result_voc, other_desc, idx_visit_code):
         self._session[user_id] = {
             "is_visit_input": True,
             "is_photo_input": False,
             "fullname": fullname,
             "nip": nip,
             "date": date,
+            "voc_code" : voc_code,
             "voc_state": voc_state,
             "voc_category": voc_category,
             "result_voc": result_voc,
@@ -59,8 +60,7 @@ class Session:
         fullname = user["fullname"]
         nip = user["nip"]
         date = user["date"]
-        f, m, r = user["idx_visit_code"]
-        voc_code = f + m + r
+        voc_code = user["voc_code"]
         voc_state = user["voc_state"]
         voc_category = user["voc_category"]
         result_voc = user["result_voc"]

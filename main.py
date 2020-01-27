@@ -191,7 +191,8 @@ def input_visit_callback(update, context):
         date = "{}-{}-{}".format(date_now.year, date_now.month, date_now.day)
         other_vs = resp[2].strip() if resp[2] else "kosong"
         session.add_user(
-            user_id, fullname(update), str(ip_cust), date, caption[0], caption[1], caption[2], other_vs, idx_visit_code
+            user_id, fullname(update), str(ip_cust), date, visit_code, caption[0], caption[1], caption[2], other_vs,
+            idx_visit_code
         )
         msg_resp = "@{} input visit diterima:\n{}".format(username, session.get_desc_user(user_id))
         context.bot.send_message(
