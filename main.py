@@ -10,6 +10,7 @@ import config
 from config import num_keyboard
 from database import DBHelper
 from session_chat import Session
+import token
 
 # command list
 # input_visit - memulai sesi input data visit
@@ -23,7 +24,7 @@ from session_chat import Session
 PASSWD_ADMIN, MENU_ADMIN = range(1, 3)
 db = DBHelper()
 session = Session()
-TOKEN = config.token
+TOKEN = token.token
 logging.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
     level=logging.INFO
@@ -282,6 +283,10 @@ def admin_logout(update, context):
     return ConversationHandler.END
 
 
+def admin_menu_handler(update, context):
+    pass
+
+
 if __name__ == "__main__":
     if TOKEN == "":
         print("Token API kosong, tidak dapat menangani bot")
@@ -295,7 +300,8 @@ if __name__ == "__main__":
             allow_reentry=True,
             fallbacks=[CommandHandler('end_adm1n', admin_logout)],
             states={
-                PASSWD_ADMIN: [CallbackQueryHandler(pin_handler)]
+                PASSWD_ADMIN: [CallbackQueryHandler(pin_handler)],
+                MENU_ADMIN: [CallbackQueryHandler(admin_menu_handler)]
             }
         )
         up.dispatcher.add_handler(conv)
