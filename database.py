@@ -20,15 +20,13 @@ class DBHelper:
         self.conn.executescript(ddl)
         self.conn.commit()
 
-    def seeder_password(self):
+    def seeder_admin(self, pin):
         cursor = self.conn.cursor()
+        hashed_pin = hashlib.md5(str(pin).encode('utf-8')).hexdigest()
         cursor.execute(
-            "INSERT INTO " + self.TB_ADMIN + "(password, last_login) VALUES ('admin',date('now'))"
+            "INSERT INTO " + self.ADMIN + "(password) VALUES (?)", hashed_pin
         )
         self.conn.commit()
-
-    def seeder_visit(self):
-        cursor = self.conn.cursor()
 
     def check_admin_password(self, pin, username):
         cursor = self.conn.cursor()
@@ -70,27 +68,6 @@ class DBHelper:
             args = (photo_path, user_id, id_visit)
             cursor.execute(query, args)
         self.conn.commit()
-
-    def get_photo(self):
-        ts = self.TB_VISIT
-        tp = self.TB_PHOTO
-        cursor = self.conn.cursor()
-        query = "SELECT " + tp + ".tele_photo_id," + tp + ".visitor_id," + ts + ".visitor_name," + \
-                ts + ".date_visit," + \
-                ts + ".code_visit" + " FROM " + \
-                tp + \
-                " JOIN " + \
-                ts + \
-                " ON " + \
-                tp + ".visit_id=" + \
-                ts + ".visit_id"
-        cursor.execute(query)
-        return cursor.fetchall()
-
-    def get_visit(self):
-        cursor = self.conn.cursor()
-        cursor.execute("SELECT * FROM " + self.TB_VISIT)
-        return cursor.fetchall()
 
     def get_state(self):
         cursor = self.conn.cursor()
@@ -140,6 +117,5 @@ class DBHelper:
             cursor.execute(query)
         self.conn.commit()
 
-
-db = DBHelper()
-print(db.get_all_code())
+# db = DBHelper()
+# print(db.get_all_code())
