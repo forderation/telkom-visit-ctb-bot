@@ -5,7 +5,8 @@ import os
 
 import pandas as pd
 from telegram import InlineKeyboardMarkup, InlineKeyboardButton, replymarkup
-from telegram.ext import Updater, CommandHandler, Filters, MessageHandler, ConversationHandler, CallbackQueryHandler
+from telegram.ext import Updater, CommandHandler, Filters, MessageHandler, ConversationHandler, CallbackQueryHandler, \
+    Job
 
 import config
 from config import num_keyboard
@@ -21,7 +22,8 @@ from session_chat import Session
 # code_nct - daftar kode untuk status not contacted
 # get_csv - mendapatkan laporan visit dalam bentuk csv
 # case conversation handler admin
-PASSWD_ADMIN, MENU_ADMIN = range(1, 3)
+
+PASSWD_ADMIN, MENU_ADMIN, PIN_CHANGE, NEW_PIN = range(1, 5)
 db = DBHelper()
 session = Session()
 TOKEN = tk.token
@@ -268,7 +270,7 @@ def admin_start(update, context):
     global admin_msg_id, admin_chat_id
     context.bot.send_message(
         chat_id=update.effective_chat.id,
-        text="Masukkan pin admin : "
+        text="masukkan pin admin : "
     )
     message = context.bot.send_message(
         chat_id=update.effective_chat.id,
@@ -280,15 +282,14 @@ def admin_start(update, context):
     return PASSWD_ADMIN
 
 
-def admin_logout(update, context):
-    return ConversationHandler.END
-
-
-def admin_menu_handler(update, context):
+def admin_menu_handler(update, context, add_msg=""):
+    msg_send = "menu utama admin"
+    if len(add_msg) != 0:
+        msg_send += "\nnotifikasi: {}".format(add_msg)
     context.bot.edit_message_text(
         chat_id=admin_chat_id,
         message_id=admin_msg_id,
-        text="Menu utama admin : ",
+        text=msg_send,
         reply_markup=InlineKeyboardMarkup(config.admin_main_menu)
     )
 
@@ -301,6 +302,78 @@ def admin_main_menu_callback(update, context):
             message_id=admin_msg_id
         )
         return ConversationHandler.END
+    if data == "gp":
+        context.bot.edit_message_text(
+            chat_id=admin_chat_id,
+            message_id=admin_msg_id,
+            text="masukkan pin admin saat ini: ",
+            reply_markup=InlineKeyboardMarkup(num_keyboard)
+        )
+        global pin_admin
+        pin_admin = ""
+        return PIN_CHANGE
+
+
+def admin_change_pin(update, context):
+    global pin_admin
+    msg_bot = ""
+    resp_data = str(update.callback_query.data)
+    if resp_data == "cancel":
+        admin_menu_handler(update, context)
+        return MENU_ADMIN
+    if resp_data != "clear" and resp_data != "submit":
+        pin_admin += resp_data
+        msg_bot = len(pin_admin) * "*"
+    if resp_data == "clear":
+        pin_admin = ""
+        msg_bot = "-"
+    if resp_data == "submit":
+        username = update.callback_query.from_user.username
+        resp_pin = db.check_admin_password(pin_admin, username)
+        if resp_pin:
+            context.bot.edit_message_text(
+                chat_id=admin_chat_id,
+                message_id=admin_msg_id,
+                text="masukkan pin baru:",
+                reply_markup=InlineKeyboardMarkup(num_keyboard)
+            )
+            pin_admin = ""
+            return NEW_PIN
+        else:
+            msg_bot = "Password salah"
+            pin_admin = ""
+    context.bot.edit_message_text(
+        chat_id=admin_chat_id,
+        message_id=admin_msg_id,
+        text=msg_bot,
+        reply_markup=InlineKeyboardMarkup(num_keyboard)
+    )
+
+
+def admin_new_pin(update, context):
+    global pin_admin
+    msg_bot = ""
+    resp_data = str(update.callback_query.data)
+    if resp_data == "cancel":
+        admin_menu_handler(update, context)
+        return MENU_ADMIN
+    if resp_data != "clear" and resp_data != "submit":
+        pin_admin += resp_data
+        msg_bot = len(pin_admin) * "*"
+    if resp_data == "clear":
+        pin_admin = ""
+        msg_bot = "-"
+    if resp_data == "submit":
+        pin_admin = ""
+        db.seeder_admin(pin_admin)
+        admin_menu_handler(update, context, "update pin berhasil")
+        return MENU_ADMIN
+    context.bot.edit_message_text(
+        chat_id=admin_chat_id,
+        message_id=admin_msg_id,
+        text=msg_bot,
+        reply_markup=InlineKeyboardMarkup(num_keyboard)
+    )
 
 
 if __name__ == "__main__":
@@ -314,10 +387,12 @@ if __name__ == "__main__":
         conv = ConversationHandler(
             entry_points=[CommandHandler('start_adm1n', admin_start)],
             allow_reentry=True,
-            fallbacks=[CommandHandler('end_adm1n', admin_logout)],
+            fallbacks=[],
             states={
                 PASSWD_ADMIN: [CallbackQueryHandler(pin_handler)],
-                MENU_ADMIN: [CallbackQueryHandler(admin_main_menu_callback)]
+                MENU_ADMIN: [CallbackQueryHandler(admin_main_menu_callback)],
+                PIN_CHANGE: [CallbackQueryHandler(admin_change_pin)],
+                NEW_PIN: [CallbackQueryHandler(admin_new_pin)]
             }
         )
         up.dispatcher.add_handler(conv)
@@ -329,7 +404,6 @@ if __name__ == "__main__":
         up.dispatcher.add_handler(CommandHandler('input_visit', input_visit_callback))
         up.dispatcher.add_handler(CommandHandler('submit_visit', submit_visit))
         up.dispatcher.add_handler(CommandHandler('report_code', report_code))
-        up.dispatcher.add_handler(CommandHandler('pin_admin', pin_handler))
         up.dispatcher.add_handler(CallbackQueryHandler(callback_code))
         print("Making conversation done")
         up.start_polling()
