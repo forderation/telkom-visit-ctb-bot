@@ -125,9 +125,29 @@ class DBHelper:
                 self.CATEGORY + " ON {}.id_category = {}.id JOIN ".format(vh, self.CATEGORY) + \
                 self.RESULT + " ON {}.id_result = {}.id".format(vh, self.RESULT)
         cursor = self.conn.cursor()
+        cursor_ph = self.conn.cursor()
         cursor.execute(query)
-        return cursor.fetchall()
+        result = []
+        res_photos = []
+        for row in cursor.fetchall():
+            id_hist = row[0]
+            query = "SELECT photo_path FROM " + self.PHOTO + " WHERE id_visit = '" + str(id_hist) + "'"
+            cursor_ph.execute(query)
+            photos = cursor_ph.fetchall()
+            date = row[1].split(" ")[0]
+            nip = row[2]
+            other_desc = row[3]
+            name_visitor = row[10]
+            state_visit = row[15]
+            category_visit = row[18]
+            result_visit = row[22]
+            visit_code = row[16] + row[19] + row[23]
+            result.append(
+                [date, nip, visit_code, other_desc, name_visitor, state_visit,
+                 category_visit, result_visit]
+            )
+            res_photos.append([ph[0] for ph in photos])
+        return result, res_photos
 
-
-db = DBHelper()
-print(db.get_report())
+# db = DBHelper()
+# print(db.get_report())

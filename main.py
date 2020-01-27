@@ -243,18 +243,22 @@ def save_photo_local(context, user_id):
         context.bot.get_file(photo_id).download(user_path + "/" + photo_id + ".jpg")
 
 
-def get_csv(update, context):
-    visits = db.get_visit()
+def get_report(update, context):
+    visits, photos = db.get_report()
     df = pd.DataFrame(
         visits,
-        columns=["id", "nama visitor", "tanggal visit", "nomor internet pelanggan", "status visit",
-                 "hasil visit", "kode visit", "keterangan lain-lain"]
+        columns=["tanggal visit", "nomor internet pelanggan", "kode visit", "keterangan lain-lain", "nama visitor",
+                 "status visit", "kategori visit", "hasil visit"]
     )
-    df.to_csv("report.csv", index=False)
+    df["bukti foto visit"] = pd.Series(photos)
+    df["bukti foto visit"] = df["bukti foto visit"].apply(
+        lambda x: str(x).replace("[", "").replace("]", "").replace("'", ""))
+    print(df.head(10))
+    df.to_excel("report.xlsx", index=False)
     context.bot.send_document(
         chat_id=update.effective_chat.id,
-        document=open("report.csv", 'rb'),
-        filename="laporan_visit.csv"
+        document=open("report.xlsx", 'rb'),
+        filename="laporan visit.xlsx"
     )
 
 
@@ -302,7 +306,6 @@ if __name__ == "__main__":
         up.dispatcher.add_handler(CommandHandler('cancel', cancel_callback))
         up.dispatcher.add_handler(CommandHandler('input_visit', input_visit_callback))
         up.dispatcher.add_handler(CommandHandler('submit_visit', submit_visit))
-        up.dispatcher.add_handler(CommandHandler('get_csv', get_csv))
         up.dispatcher.add_handler(CommandHandler('report_code', report_code))
         up.dispatcher.add_handler(CommandHandler('pin_admin', pin_handler))
         up.dispatcher.add_handler(CallbackQueryHandler(callback_code))
