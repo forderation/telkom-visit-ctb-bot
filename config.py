@@ -45,17 +45,20 @@ admin_kv_menu = [
 admin_state_menu = [
     [
         InlineKeyboardButton("perbarui state", callback_data="update_state"),
-    ]
+        InlineKeyboardButton("kembali ke menu utama", callback_data="kmu")
+    ],
 ]
 
 admin_category_menu = [
     [
         InlineKeyboardButton("perbarui kategori", callback_data="update_ct"),
+        InlineKeyboardButton("kembali ke menu utama", callback_data="kmu")
     ]
 ]
 
 admin_result_menu = [
     [
         InlineKeyboardButton("perbarui hasil visit", callback_data="update_ct"),
+        InlineKeyboardButton("kembali ke menu utama", callback_data="kmu")
     ]
 ]

@@ -1,4 +1,5 @@
 import datetime
+import token_telegram as tk
 import logging
 import os
 
@@ -10,7 +11,6 @@ import config
 from config import num_keyboard
 from database import DBHelper
 from session_chat import Session
-import token
 
 # command list
 # input_visit - memulai sesi input data visit
@@ -24,7 +24,7 @@ import token
 PASSWD_ADMIN, MENU_ADMIN = range(1, 3)
 db = DBHelper()
 session = Session()
-TOKEN = token.token
+TOKEN = tk.token
 logging.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
     level=logging.INFO
@@ -284,7 +284,12 @@ def admin_logout(update, context):
 
 
 def admin_menu_handler(update, context):
-    pass
+    context.bot.edit_message_text(
+        chat_id=admin_chat_id,
+        message_id=admin_msg_id,
+        text="Menu utama admin : ",
+        reply_markup=InlineKeyboardMarkup(config.admin_main_menu)
+    )
 
 
 if __name__ == "__main__":

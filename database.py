@@ -23,8 +23,10 @@ class DBHelper:
     def seeder_admin(self, pin):
         cursor = self.conn.cursor()
         hashed_pin = hashlib.md5(str(pin).encode('utf-8')).hexdigest()
+        query_delete = "DELETE FROM " + self.ADMIN + " WHERE id = 1"
+        cursor.execute(query_delete)
         cursor.execute(
-            "INSERT INTO " + self.ADMIN + "(password) VALUES (?)", hashed_pin
+            "INSERT INTO " + self.ADMIN + " (id,password) VALUES (1,'{}')".format(hashed_pin)
         )
         self.conn.commit()
 
@@ -149,5 +151,6 @@ class DBHelper:
             res_photos.append([ph[0] for ph in photos])
         return result, res_photos
 
-# db = DBHelper()
-# print(db.get_report())
+
+db = DBHelper()
+db.seeder_admin(123)
