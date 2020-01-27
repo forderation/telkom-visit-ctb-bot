@@ -1,4 +1,5 @@
 from telegram import InlineKeyboardButton
+
 num_keyboard = [
     [
         InlineKeyboardButton("1", callback_data='1'), InlineKeyboardButton("2", callback_data='2'),
@@ -22,13 +23,39 @@ num_keyboard = [
 ]
 
 admin_main_menu = [
-        [InlineKeyboardButton("kode visit", callback_data="kv")],
-        [InlineKeyboardButton("laporan", callback_data="laporan")],
-        [InlineKeyboardButton("keluar", callback_data="logout")]
+    [InlineKeyboardButton("kode visit", callback_data="kv")],
+    [InlineKeyboardButton("laporan", callback_data="laporan")],
+    [InlineKeyboardButton("ganti pin", callback_data="gp")],
+    [InlineKeyboardButton("keluar", callback_data="logout")]
 ]
 
 admin_laporan_menu = [
     [InlineKeyboardButton("laporan visitor", callback_data="lv")],
-    [InlineKeyboardButton("history laporan", callback_data="hl")],
+    [InlineKeyboardButton("laporan riwayat submit", callback_data="rws")],
     [InlineKeyboardButton("kembali ke menu utama", callback_data="kmu")]
+]
+
+admin_kv_menu = [
+    [InlineKeyboardButton("state visit", callback_data="sv_menu")],
+    [InlineKeyboardButton("kategori visit", callback_data="ct_menu")],
+    [InlineKeyboardButton("hasil visit", callback_data="rs_menu")],
+    [InlineKeyboardButton("kembali ke menu utama", callback_data="kmu")]
+]
+
+admin_state_menu = [
+    [
+        InlineKeyboardButton("perbarui state", callback_data="update_state"),
+    ]
+]
+
+admin_category_menu = [
+    [
+        InlineKeyboardButton("perbarui kategori", callback_data="update_ct"),
+    ]
+]
+
+admin_result_menu = [
+    [
+        InlineKeyboardButton("perbarui hasil visit", callback_data="update_ct"),
+    ]
 ]
