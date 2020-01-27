@@ -8,7 +8,7 @@ class DBHelper:
     def __init__(self, dbname="visit_ctb2.sqlite"):
         self.dbname = dbname
         self.conn = sqlite3.connect(dbname, check_same_thread=False)
-        self.VISIT = "VISIT_HIST"
+        self.VISIT_HIST = "VISIT_HIST"
         self.PHOTO = "PHOTO_VISIT"
         self.ADMIN = "ADMIN"
         self.CATEGORY = "CATEGORY_RESULT"
@@ -47,7 +47,7 @@ class DBHelper:
     def add_visit(self, user_id, user_session):
         cursor = self.conn.cursor()
         query = "INSERT INTO " + \
-                self.VISIT + \
+                self.VISIT_HIST + \
                 " (date_submit, nip, other_desc, id_state, id_category, id_result, id_visitor)" + \
                 "VALUES ((SELECT datetime('now','localtime')),?,?,?,?,?,?)"
         state, category, result = user_session["idx_visit_code"]
@@ -117,5 +117,17 @@ class DBHelper:
             cursor.execute(query)
         self.conn.commit()
 
-# db = DBHelper()
-# print(db.get_all_code())
+    def get_report(self):
+        vh = self.VISIT_HIST
+        query = "SELECT * FROM " + vh + " JOIN " + self.VISITOR + \
+                " ON {}.id_visitor = {}.id_visitor JOIN ".format(vh, self.VISITOR) + self.STATE + \
+                " ON {}.id_state = {}.id JOIN ".format(vh, self.STATE) + \
+                self.CATEGORY + " ON {}.id_category = {}.id JOIN ".format(vh, self.CATEGORY) + \
+                self.RESULT + " ON {}.id_result = {}.id".format(vh, self.RESULT)
+        cursor = self.conn.cursor()
+        cursor.execute(query)
+        return cursor.fetchall()
+
+
+db = DBHelper()
+print(db.get_report())

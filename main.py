@@ -254,7 +254,7 @@ def get_csv(update, context):
     context.bot.send_document(
         chat_id=update.effective_chat.id,
         document=open("report.csv", 'rb'),
-        filename="laporan.csv"
+        filename="laporan_visit.csv"
     )
 
 
