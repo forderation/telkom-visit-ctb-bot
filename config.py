@@ -23,10 +23,8 @@ num_keyboard = [
 ]
 
 admin_main_menu = [
-    [InlineKeyboardButton("kode visit", callback_data="kv")],
-    [InlineKeyboardButton("laporan", callback_data="laporan")],
-    [InlineKeyboardButton("ganti pin", callback_data="gp")],
-    [InlineKeyboardButton("keluar", callback_data="logout")]
+    [InlineKeyboardButton("kode visit", callback_data="kv"), InlineKeyboardButton("laporan", callback_data="laporan")],
+    [InlineKeyboardButton("ganti pin", callback_data="gp"), InlineKeyboardButton("keluar", callback_data="logout")],
 ]
 
 admin_laporan_menu = [

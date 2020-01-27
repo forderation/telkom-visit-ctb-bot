@@ -1,14 +1,13 @@
 import datetime
-import token_telegram as tk
 import logging
 import os
 
 import pandas as pd
-from telegram import InlineKeyboardMarkup, InlineKeyboardButton, replymarkup
-from telegram.ext import Updater, CommandHandler, Filters, MessageHandler, ConversationHandler, CallbackQueryHandler, \
-    Job
+from telegram import InlineKeyboardMarkup, InlineKeyboardButton
+from telegram.ext import Updater, CommandHandler, Filters, MessageHandler, ConversationHandler, CallbackQueryHandler
 
 import config
+import token_telegram as tk
 from config import num_keyboard
 from database import DBHelper
 from session_chat import Session
@@ -37,6 +36,8 @@ admin_msg_id = 0
 admin_chat_id = 0
 code_msg_id = 0
 code_chat_id = 0
+entry_msg_id = 0
+entry_chat_id = 0
 
 
 def pin_handler(update, context):
@@ -48,6 +49,10 @@ def pin_handler(update, context):
             chat_id=admin_chat_id,
             message_id=admin_msg_id,
             text="Login dibatalkan"
+        )
+        context.bot.delete_message(
+            chat_id=entry_chat_id,
+            message_id=entry_msg_id
         )
         return ConversationHandler.END
     if resp_data != "clear" and resp_data != "submit":
@@ -64,6 +69,10 @@ def pin_handler(update, context):
                 chat_id=admin_chat_id,
                 message_id=admin_msg_id,
                 text="Password benar, anda sudah login"
+            )
+            context.bot.delete_message(
+                chat_id=entry_chat_id,
+                message_id=entry_msg_id
             )
             admin_menu_handler(update, context)
             return MENU_ADMIN
@@ -267,11 +276,13 @@ def get_report(update, context):
 
 
 def admin_start(update, context):
-    global admin_msg_id, admin_chat_id
-    context.bot.send_message(
+    global admin_msg_id, admin_chat_id, entry_msg_id, entry_chat_id
+    entry_msg = context.bot.send_message(
         chat_id=update.effective_chat.id,
         text="masukkan pin admin : "
     )
+    entry_msg_id = entry_msg.message_id
+    entry_chat_id = entry_msg.chat_id
     message = context.bot.send_message(
         chat_id=update.effective_chat.id,
         text="-",
