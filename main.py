@@ -63,6 +63,7 @@ def pin_handler(update, context):
                 message_id=admin_msg_id,
                 text="Password benar, anda sudah login"
             )
+            admin_menu_handler(update, context)
             return MENU_ADMIN
         else:
             msg_bot = "Password salah"
@@ -292,6 +293,16 @@ def admin_menu_handler(update, context):
     )
 
 
+def admin_main_menu_callback(update, context):
+    data = update.callback_query.data
+    if data == "logout":
+        context.bot.delete_message(
+            chat_id=admin_chat_id,
+            message_id=admin_msg_id
+        )
+        return ConversationHandler.END
+
+
 if __name__ == "__main__":
     if TOKEN == "":
         print("Token API kosong, tidak dapat menangani bot")
@@ -306,7 +317,7 @@ if __name__ == "__main__":
             fallbacks=[CommandHandler('end_adm1n', admin_logout)],
             states={
                 PASSWD_ADMIN: [CallbackQueryHandler(pin_handler)],
-                MENU_ADMIN: [CallbackQueryHandler(admin_menu_handler)]
+                MENU_ADMIN: [CallbackQueryHandler(admin_main_menu_callback)]
             }
         )
         up.dispatcher.add_handler(conv)
