@@ -27,7 +27,7 @@ num_keyboard = [
 ]
 
 admin_main_menu = [
-    [InlineKeyboardButton("kode visit", callback_data="kv"),
+    [InlineKeyboardButton("pengaturan visit", callback_data="pv"),
      InlineKeyboardButton("laporan", callback_data="laporan")],
     [InlineKeyboardButton("ganti pin", callback_data="gp"),
      InlineKeyboardButton("keluar", callback_data="logout")],
@@ -48,9 +48,6 @@ admin_kv_menu = [
 
 admin_state_menu = [
     [
-        InlineKeyboardButton("perbarui nama state", callback_data="pns"),
-        InlineKeyboardButton("perbarui kode state", callback_data="pks"),
-        InlineKeyboardButton("hapus state", callback_data="hs"),
         InlineKeyboardButton("kembali ke menu utama", callback_data="kmu")
     ],
 ]

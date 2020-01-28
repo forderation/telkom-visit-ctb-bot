@@ -157,7 +157,17 @@ class DBHelper:
         cursor.execute(query)
         return cursor.fetchall()
 
+    def get_category_visit(self):
+        query = "SELECT {}.id, name_category, {}.name_state FROM ".format(self.CATEGORY, self.STATE) + \
+                self.CATEGORY + " JOIN " + self.STATE + " ON {}.id_state = {}.id".format(self.CATEGORY,self.STATE)
+        cursor = self.conn.cursor()
+        cursor.execute(query)
+        return cursor.fetchall()
+
 
 db = DBHelper()
-print(db.get_list_visitor())
-db.seeder_admin(1)
+# print(db.get_list_visitor())
+# db.seeder_admin(1)
+# id_, name = zip(*db.get_category_visit())
+# print(f"{id_}: {name}")
+print(db.get_category_visit())

@@ -22,7 +22,7 @@ from session_chat import Session
 # get_csv - mendapatkan laporan visit dalam bentuk csv
 # case conversation handler admin
 
-PASSWD_ADMIN, MENU_ADMIN, PIN_CHANGE, NEW_PIN, LAPORAN_ADMIN = range(1, 6)
+PASSWD_ADMIN, VISIT_RESULT_ADMIN, MENU_ADMIN, PIN_CHANGE, NEW_PIN, LAPORAN_ADMIN, VISIT_MENU_ADMIN = range(1, 8)
 db = DBHelper()
 session = Session()
 TOKEN = tk.token
@@ -44,13 +44,14 @@ def pin_handler(update, context):
     global pin_admin
     msg_bot = ""
     resp_data = str(update.callback_query.data)
+    bot = context.bot
     if resp_data == "cancel":
-        context.bot.edit_message_text(
+        bot.edit_message_text(
             chat_id=admin_chat_id,
             message_id=admin_msg_id,
             text="login dibatalkan"
         )
-        context.bot.delete_message(
+        bot.delete_message(
             chat_id=entry_chat_id,
             message_id=entry_msg_id
         )
@@ -65,12 +66,12 @@ def pin_handler(update, context):
         username = update.callback_query.from_user.username
         resp_pin = db.check_admin_password(pin_admin, username)
         if resp_pin:
-            context.bot.edit_message_text(
+            bot.edit_message_text(
                 chat_id=admin_chat_id,
                 message_id=admin_msg_id,
                 text="Password benar, anda sudah login"
             )
-            context.bot.delete_message(
+            bot.delete_message(
                 chat_id=entry_chat_id,
                 message_id=entry_msg_id
             )
@@ -80,7 +81,7 @@ def pin_handler(update, context):
         else:
             msg_bot = "Password salah"
             pin_admin = ""
-    context.bot.edit_message_text(
+    bot.edit_message_text(
         chat_id=admin_chat_id,
         message_id=admin_msg_id,
         text=msg_bot,
@@ -345,6 +346,9 @@ def admin_main_menu_callback(update, context):
             reply_markup=InlineKeyboardMarkup(config.admin_laporan_menu)
         )
         return LAPORAN_ADMIN
+    if data == "pv":
+        admin_vm_handler(update, context)
+        return VISIT_MENU_ADMIN
 
 
 def admin_change_pin(update, context):
@@ -420,6 +424,46 @@ def admin_laporan_callback(update, context):
         return MENU_ADMIN
 
 
+def admin_vm_callback(update, context):
+    data = update.callback_query.data
+    if data == "kmu":
+        admin_menu_handler(update, context)
+        return MENU_ADMIN
+    if data == "hs_menu":
+        keyboard = config.admin_state_menu
+        num_key = 1
+        for id_key, category, state in db.get_category_visit():
+            caption = f"{category} : {state}"
+            if num_key == 1:
+                keyboard.append([InlineKeyboardButton(caption, callback_data=id_key)])
+                num_key += 1
+                continue
+            if num_key <= 2:
+                keyboard[len(keyboard) - 1].append(InlineKeyboardButton(caption, callback_data=id_key))
+                num_key += 1
+            if num_key >= 2:
+                num_key = 1
+        context.bot.edit_message_text(
+            chat_id=admin_chat_id,
+            message_id=admin_msg_id,
+            text="pilih kategori visit terlebih dahulu",
+            reply_markup=InlineKeyboardMarkup(keyboard)
+        )
+
+
+def admin_vm_handler(update, context):
+    context.bot.edit_message_text(
+        chat_id=admin_chat_id,
+        message_id=admin_msg_id,
+        text="menu pengaturan laporan visit",
+        reply_markup=InlineKeyboardMarkup(config.admin_kv_menu)
+    )
+
+
+def admin_vs_callback(update, context):
+    pass
+
+
 if __name__ == "__main__":
     if TOKEN == "":
         print("Token API kosong, tidak dapat menangani bot")
@@ -437,7 +481,9 @@ if __name__ == "__main__":
                 MENU_ADMIN: [CallbackQueryHandler(admin_main_menu_callback)],
                 PIN_CHANGE: [CallbackQueryHandler(admin_change_pin)],
                 NEW_PIN: [CallbackQueryHandler(admin_new_pin)],
-                LAPORAN_ADMIN: [CallbackQueryHandler(admin_laporan_callback)]
+                LAPORAN_ADMIN: [CallbackQueryHandler(admin_laporan_callback)],
+                VISIT_MENU_ADMIN: [CallbackQueryHandler(admin_vm_callback)],
+                VISIT_RESULT_ADMIN: [CallbackQueryHandler(admin_vs_callback)]
             }
         )
         up.dispatcher.add_handler(conv)
