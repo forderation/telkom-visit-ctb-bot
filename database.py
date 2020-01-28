@@ -119,7 +119,7 @@ class DBHelper:
             cursor.execute(query)
         self.conn.commit()
 
-    def get_report(self):
+    def get_report_hist(self):
         vh = self.VISIT_HIST
         query = "SELECT * FROM " + vh + " JOIN " + self.VISITOR + \
                 " ON {}.id_visitor = {}.id_visitor JOIN ".format(vh, self.VISITOR) + self.STATE + \
@@ -151,6 +151,13 @@ class DBHelper:
             res_photos.append([ph[0] for ph in photos])
         return result, res_photos
 
+    def get_list_visitor(self):
+        query = "SELECT id_visitor, name_visitor, username, total_submit, last_submit FROM " + self.VISITOR
+        cursor = self.conn.cursor()
+        cursor.execute(query)
+        return cursor.fetchall()
+
 
 db = DBHelper()
-db.seeder_admin(123)
+print(db.get_list_visitor())
+db.seeder_admin(1)

@@ -22,7 +22,7 @@ from session_chat import Session
 # get_csv - mendapatkan laporan visit dalam bentuk csv
 # case conversation handler admin
 
-PASSWD_ADMIN, MENU_ADMIN, PIN_CHANGE, NEW_PIN = range(1, 5)
+PASSWD_ADMIN, MENU_ADMIN, PIN_CHANGE, NEW_PIN, LAPORAN_ADMIN = range(1, 6)
 db = DBHelper()
 session = Session()
 TOKEN = tk.token
@@ -48,7 +48,7 @@ def pin_handler(update, context):
         context.bot.edit_message_text(
             chat_id=admin_chat_id,
             message_id=admin_msg_id,
-            text="Login dibatalkan"
+            text="login dibatalkan"
         )
         context.bot.delete_message(
             chat_id=entry_chat_id,
@@ -74,6 +74,7 @@ def pin_handler(update, context):
                 chat_id=entry_chat_id,
                 message_id=entry_msg_id
             )
+            pin_admin = ""
             admin_menu_handler(update, context)
             return MENU_ADMIN
         else:
@@ -256,8 +257,8 @@ def save_photo_local(context, user_id):
         context.bot.get_file(photo_id).download(user_path + "/" + photo_id + ".jpg")
 
 
-def get_report(update, context):
-    visits, photos = db.get_report()
+def get_report_hist(update, context):
+    visits, photos = db.get_report_hist()
     df = pd.DataFrame(
         visits,
         columns=["tanggal visit", "nomor internet pelanggan", "kode visit", "keterangan lain-lain", "nama visitor",
@@ -266,12 +267,25 @@ def get_report(update, context):
     df["bukti foto visit"] = pd.Series(photos)
     df["bukti foto visit"] = df["bukti foto visit"].apply(
         lambda x: str(x).replace("[", "").replace("]", "").replace("'", ""))
-    print(df.head(10))
     df.to_excel("report.xlsx", index=False)
     context.bot.send_document(
         chat_id=update.effective_chat.id,
         document=open("report.xlsx", 'rb'),
         filename="laporan visit.xlsx"
+    )
+
+
+def get_list_visitor(update, context):
+    visitors = db.get_list_visitor()
+    df = pd.DataFrame(
+        visitors,
+        columns=["id visitor", "nama visitor", "username", "total submit", "terakhir submit"]
+    )
+    df.to_excel("visitors.xlsx", index=False)
+    context.bot.send_document(
+        chat_id=update.effective_chat.id,
+        document=open("visitors.xlsx", 'rb'),
+        filename="list visitor.xlsx"
     )
 
 
@@ -307,6 +321,7 @@ def admin_menu_handler(update, context, add_msg=""):
 
 def admin_main_menu_callback(update, context):
     data = update.callback_query.data
+    global pin_admin
     if data == "logout":
         context.bot.delete_message(
             chat_id=admin_chat_id,
@@ -320,9 +335,16 @@ def admin_main_menu_callback(update, context):
             text="masukkan pin admin saat ini: ",
             reply_markup=InlineKeyboardMarkup(num_keyboard)
         )
-        global pin_admin
         pin_admin = ""
         return PIN_CHANGE
+    if data == "laporan":
+        context.bot.edit_message_text(
+            chat_id=admin_chat_id,
+            message_id=admin_msg_id,
+            text="menu laporan : ",
+            reply_markup=InlineKeyboardMarkup(config.admin_laporan_menu)
+        )
+        return LAPORAN_ADMIN
 
 
 def admin_change_pin(update, context):
@@ -387,6 +409,17 @@ def admin_new_pin(update, context):
     )
 
 
+def admin_laporan_callback(update, context):
+    data = update.callback_query.data
+    if data == "lv":
+        get_list_visitor(update, context)
+    if data == "rws":
+        get_report_hist(update, context)
+    if data == "kmu":
+        admin_menu_handler(update, context)
+        return MENU_ADMIN
+
+
 if __name__ == "__main__":
     if TOKEN == "":
         print("Token API kosong, tidak dapat menangani bot")
@@ -403,7 +436,8 @@ if __name__ == "__main__":
                 PASSWD_ADMIN: [CallbackQueryHandler(pin_handler)],
                 MENU_ADMIN: [CallbackQueryHandler(admin_main_menu_callback)],
                 PIN_CHANGE: [CallbackQueryHandler(admin_change_pin)],
-                NEW_PIN: [CallbackQueryHandler(admin_new_pin)]
+                NEW_PIN: [CallbackQueryHandler(admin_new_pin)],
+                LAPORAN_ADMIN: [CallbackQueryHandler(admin_laporan_callback)]
             }
         )
         up.dispatcher.add_handler(conv)
