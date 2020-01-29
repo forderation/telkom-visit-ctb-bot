@@ -207,6 +207,12 @@ class DBHelper:
         cursor.execute(query)
         self.conn.commit()
 
+    def recode_result_visit(self, id_, new_code):
+        cursor = self.conn.cursor()
+        query = "UPDATE " + self.RESULT + " SET code_result = '" + new_code + "' WHERE id = " + id_
+        cursor.execute(query)
+        self.conn.commit()
+
 
 db = DBHelper()
 # print(db.get_list_visitor())
