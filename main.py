@@ -21,8 +21,9 @@ from session_chat import Session
 # get_csv - mendapatkan laporan visit dalam bentuk csv
 # case conversation handler admin
 
-PASSWD_ADMIN, EDIT_RV_ADMIN, ADD_RV, UDPATE_NAME_RV, UPDATE_CODE_RV, REMOVE_RV, VISIT_RESULT_ADMIN, MENU_ADMIN, PIN_CHANGE, NEW_PIN, LAPORAN_ADMIN, VISIT_MENU_ADMIN = range(
-    1, 13)
+PASSWD_ADMIN, EDIT_RV_ADMIN, ADD_RV, UDPATE_NAME_RV, UPDATE_CODE_RV, REMOVE_RV, RENAME_RV, \
+VISIT_RESULT_ADMIN, MENU_ADMIN, PIN_CHANGE, NEW_PIN, LAPORAN_ADMIN, VISIT_MENU_ADMIN = range(1, 14)
+
 db = DBHelper()
 session = Session()
 TOKEN = tk.token
@@ -462,15 +463,34 @@ def admin_vm_handler(update, context):
     )
 
 
+def admin_rename_rv_handler(update, context, notif=""):
+    msg = "mengganti nama hasil visit" \
+          "\nformat penggantian nama : id - nama baru hasil visit" \
+          "\ncontoh: \n1 - jarang digunakan" \
+          "\n2 - router bermasalah"
+    if len(notif) != 0:
+        msg += "\nnotifkasi: " + notif
+    global admin_msg_id, admin_chat_id
+    msg = context.bot.send_message(
+        chat_id=update.effective_chat.id,
+        text=msg,
+        reply_markup=InlineKeyboardMarkup(config.admin_back_menu)
+    )
+    admin_msg_id = msg.message_id
+    admin_chat_id = msg.chat_id
+
+
 def admin_edit_rv_callback(update, context):
     data = update.callback_query.data
     if data == "kmu":
         admin_menu_handler(update, context)
         return MENU_ADMIN
-    category = db.get_category_name(state_rv)
     if data == "ths":
         admin_add_rv_handler(update, context)
         return ADD_RV
+    if data == "pnhs":
+        admin_rename_rv_handler(update, context)
+        return RENAME_RV
 
 
 def admin_choose_rv_callback(update, context):
@@ -538,6 +558,25 @@ def admin_add_rv_callback(update, context):
     return ADD_RV
 
 
+def admin_rename_rv_callback(update, context):
+    resp = update.message.text.split("\n")
+    global state_rv
+    # validasi data
+    for row in resp:
+        split = row.split("-")
+        if len(split) != 2:
+            admin_rename_rv_handler(update, context, "gagal, terdapat kesalahan format penulisan")
+            return RENAME_RV
+        if not (db.check_exist_id_rv(row[0].strip())):
+            admin_rename_rv_handler(update, context, 'gagal, id pada "' + split[1].strip() + '" tidak ditemukan')
+            return RENAME_RV
+    for row in resp:
+        id_, new_name = row.split("-")
+        db.rename_result_visit(id_.strip(), new_name.strip())
+    admin_rename_rv_handler(update, context, "berhasil mengganti data nama visit")
+    return RENAME_RV
+
+
 if __name__ == "__main__":
     if TOKEN == "":
         print("Token API kosong, tidak dapat menangani bot")
@@ -559,8 +598,14 @@ if __name__ == "__main__":
                 VISIT_MENU_ADMIN: [CallbackQueryHandler(admin_vm_callback)],
                 VISIT_RESULT_ADMIN: [CallbackQueryHandler(admin_choose_rv_callback)],
                 EDIT_RV_ADMIN: [CallbackQueryHandler(admin_edit_rv_callback)],
-                ADD_RV: [CallbackQueryHandler(admin_back_menu_callback),
-                         MessageHandler(Filters.text, admin_add_rv_callback)]
+                ADD_RV: [
+                    CallbackQueryHandler(admin_back_menu_callback),
+                    MessageHandler(Filters.text, admin_add_rv_callback)
+                ],
+                RENAME_RV: [
+                    CallbackQueryHandler(admin_back_menu_callback),
+                    MessageHandler(Filters.text, admin_rename_rv_callback)
+                ]
             }
         )
         up.dispatcher.add_handler(conv)

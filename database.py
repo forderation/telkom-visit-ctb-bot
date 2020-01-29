@@ -193,6 +193,20 @@ class DBHelper:
         cursor.execute(query, (name_vs, code_vs, category_id, id_state))
         self.conn.commit()
 
+    def check_exist_id_rv(self, id_):
+        cursor = self.conn.cursor()
+        query = "SELECT * FROM " + self.RESULT + " WHERE id = " + id_
+        cursor.execute(query)
+        if cursor.fetchone() is None:
+            return False
+        return True
+
+    def rename_result_visit(self, id_, new_name):
+        cursor = self.conn.cursor()
+        query = "UPDATE " + self.RESULT + " SET name_result = '" + new_name + "' WHERE id = " + id_
+        cursor.execute(query)
+        self.conn.commit()
+
 
 db = DBHelper()
 # print(db.get_list_visitor())
