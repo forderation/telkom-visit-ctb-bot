@@ -159,10 +159,39 @@ class DBHelper:
 
     def get_category_visit(self):
         query = "SELECT {}.id, name_category, {}.name_state FROM ".format(self.CATEGORY, self.STATE) + \
-                self.CATEGORY + " JOIN " + self.STATE + " ON {}.id_state = {}.id".format(self.CATEGORY,self.STATE)
+                self.CATEGORY + " JOIN " + self.STATE + " ON {}.id_state = {}.id".format(self.CATEGORY, self.STATE)
         cursor = self.conn.cursor()
         cursor.execute(query)
         return cursor.fetchall()
+
+    def get_category_name(self, category_id):
+        query = "SELECT name_category FROM " + self.CATEGORY + " WHERE id = " + str(category_id)
+        cursor = self.conn.cursor()
+        cursor.execute(query)
+        return cursor.fetchone()[0]
+
+    def get_visit_result(self, category_id):
+        query = "SELECT id, name_result, code_result FROM " + self.RESULT + " WHERE id_category = " + str(category_id)
+        cursor = self.conn.cursor()
+        cursor.execute(query)
+        return cursor.fetchall()
+
+    def check_exist_code_rv(self, category_id, result_code):
+        cursor = self.conn.cursor()
+        query = "SELECT * FROM " + self.RESULT + " WHERE id_category = " + str(category_id) + \
+                " AND code_result = '" + str(result_code) + "'"
+        cursor.execute(query)
+        if not (cursor.fetchone() is None):
+            return True
+        return False
+
+    def add_result_visit(self, category_id, code_vs, name_vs):
+        cursor = self.conn.cursor()
+        query = "SELECT id_state FROM " + self.CATEGORY + " WHERE id = " + str(category_id)
+        id_state = cursor.execute(query).fetchone()[0]
+        query = "INSERT INTO " + self.RESULT + " (name_result, code_result, id_category, id_state) VALUES (?,?,?,?)"
+        cursor.execute(query, (name_vs, code_vs, category_id, id_state))
+        self.conn.commit()
 
 
 db = DBHelper()
@@ -170,4 +199,6 @@ db = DBHelper()
 # db.seeder_admin(1)
 # id_, name = zip(*db.get_category_visit())
 # print(f"{id_}: {name}")
-print(db.get_category_visit())
+# print(db.get_category_visit())
+# print(db.check_exist_code_rv(1, 12))
+# db.add_result_vist(1)

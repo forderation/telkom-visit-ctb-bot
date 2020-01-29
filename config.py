@@ -1,4 +1,9 @@
 from telegram import InlineKeyboardButton
+from emoji import emojize
+plus = emojize(":heavy_plus_sign:", use_aliases=True)
+pen = emojize(":pencil2:", use_aliases=True)
+code = emojize(":1234:", use_aliases=True)
+remove = emojize(":negative_squared_cross_mark:", use_aliases=True)
 
 num_keyboard = [
     [
@@ -46,8 +51,17 @@ admin_kv_menu = [
     [InlineKeyboardButton("kembali ke menu utama", callback_data="kmu")]
 ]
 
+admin_back_menu = [
+    [
+        InlineKeyboardButton("kembali ke menu utama", callback_data="kmu")
+    ],
+]
+
 admin_state_menu = [
     [
+        InlineKeyboardButton("perbarui nama state", callback_data="pns"),
+        InlineKeyboardButton("perbarui kode state", callback_data="pks"),
+        InlineKeyboardButton("hapus state", callback_data="hs"),
         InlineKeyboardButton("kembali ke menu utama", callback_data="kmu")
     ],
 ]
@@ -62,10 +76,9 @@ admin_category_menu = [
 ]
 
 admin_result_menu = [
-    [
-        InlineKeyboardButton("perbarui nama hasil visit", callback_data="pnhs"),
-        InlineKeyboardButton("perbarui kode hasil visit", callback_data="pkhs"),
-        InlineKeyboardButton("hapus hasil visit", callback_data="hhs"),
-        InlineKeyboardButton("kembali ke menu utama", callback_data="kmu")
-    ]
+    [InlineKeyboardButton("tambah hasil visit " + plus, callback_data="ths")],
+    [InlineKeyboardButton("perbarui nama hasil visit " + pen, callback_data="pnhs")],
+    [InlineKeyboardButton("perbarui kode hasil visit " + code, callback_data="pkhs")],
+    [InlineKeyboardButton("hapus hasil visit " + remove, callback_data="hhs")],
+    [InlineKeyboardButton("kembali ke menu utama", callback_data="kmu")]
 ]
