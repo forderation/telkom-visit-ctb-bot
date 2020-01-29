@@ -403,8 +403,8 @@ def admin_new_pin(update, context):
         pin_admin = ""
         msg_bot = "-"
     if resp_data == "submit":
-        pin_admin = ""
         db.seeder_admin(pin_admin)
+        pin_admin = ""
         admin_menu_handler(update, context, "update pin berhasil")
         return MENU_ADMIN
     context.bot.edit_message_text(
@@ -655,6 +655,7 @@ if __name__ == "__main__":
         )
         up.dispatcher.add_handler(conv)
         up.dispatcher.add_error_handler(fallback_handler)
+        up.dispatcher.add_handler(CommandHandler('start', start_handler))
         up.dispatcher.add_handler(CommandHandler('start', start_handler))
         up.dispatcher.add_handler(CommandHandler('help', start_handler))
         up.dispatcher.add_handler(MessageHandler(Filters.photo, photo_visit_callback))

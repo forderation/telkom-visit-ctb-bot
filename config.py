@@ -5,6 +5,11 @@ plus = emojize(":heavy_plus_sign:", use_aliases=True)
 pen = emojize(":pencil2:", use_aliases=True)
 code = emojize(":1234:", use_aliases=True)
 remove = emojize(":negative_squared_cross_mark:", use_aliases=True)
+gear = emojize(":gear:", use_aliases=True)
+book = emojize(":closed_book:", use_aliases=True)
+key = emojize(":key:", use_aliases=True)
+arrow_back = emojize(":arrow_backward:", use_aliases=True)
+arrow_up = emojize(":arrow_up_small:", use_aliases=True)
 
 num_keyboard = [
     [
@@ -33,28 +38,28 @@ num_keyboard = [
 ]
 
 admin_main_menu = [
-    [InlineKeyboardButton("pengaturan visit", callback_data="pv"),
-     InlineKeyboardButton("laporan", callback_data="laporan")],
-    [InlineKeyboardButton("ganti pin", callback_data="gp"),
-     InlineKeyboardButton("keluar", callback_data="logout")],
+    [InlineKeyboardButton("pengaturan visit " + gear, callback_data="pv"),
+     InlineKeyboardButton("laporan " + book, callback_data="laporan")],
+    [InlineKeyboardButton("ganti pin " + key, callback_data="gp"),
+     InlineKeyboardButton("keluar " + arrow_back, callback_data="logout")],
 ]
 
 admin_laporan_menu = [
+    [InlineKeyboardButton("kembali ke menu utama " + arrow_up, callback_data="kmu")],
     [InlineKeyboardButton("list visitor", callback_data="lv")],
     [InlineKeyboardButton("laporan riwayat submit", callback_data="rws")],
-    [InlineKeyboardButton("kembali ke menu utama", callback_data="kmu")]
 ]
 
 admin_kv_menu = [
+    [InlineKeyboardButton("kembali ke menu utama " + arrow_up, callback_data="kmu")],
     [InlineKeyboardButton("state visit", callback_data="sv_menu")],
     [InlineKeyboardButton("kategori visit", callback_data="ct_menu")],
     [InlineKeyboardButton("hasil visit", callback_data="rs_menu")],
-    [InlineKeyboardButton("kembali ke menu utama", callback_data="kmu")]
 ]
 
 admin_back_menu = [
     [
-        InlineKeyboardButton("kembali ke menu utama", callback_data="kmu")
+        InlineKeyboardButton("kembali ke menu utama " + arrow_up, callback_data="kmu")
     ],
 ]
 
@@ -77,9 +82,9 @@ admin_category_menu = [
 ]
 
 admin_result_menu = [
+    [InlineKeyboardButton("kembali ke menu utama " + arrow_up, callback_data="kmu")],
     [InlineKeyboardButton("tambah hasil visit " + plus, callback_data="ths")],
     [InlineKeyboardButton("perbarui nama hasil visit " + pen, callback_data="pnhs")],
     [InlineKeyboardButton("perbarui kode hasil visit " + code, callback_data="pkhs")],
     [InlineKeyboardButton("hapus hasil visit " + remove, callback_data="hhs")],
-    [InlineKeyboardButton("kembali ke menu utama", callback_data="kmu")]
 ]
