@@ -22,8 +22,8 @@ from session_chat import Session
 # case conversation handler admin
 
 PASSWD_ADMIN, EDIT_RV_ADMIN, ADD_RV, UDPATE_NAME_RV, UPDATE_CODE_RV, REMOVE_RV, RENAME_RV, RECODE_RV, \
-    CATEGORY_RESULT_ADMIN, VISIT_RESULT_ADMIN, MENU_ADMIN, PIN_CHANGE, NEW_PIN, LAPORAN_ADMIN, \
-    EDIT_CR_ADMIN, VISIT_MENU_ADMIN, ADD_CR, RENAME_CR, RECODE_CR, REMOVE_CR = range(1, 21)
+CATEGORY_RESULT_ADMIN, VISIT_RESULT_ADMIN, MENU_ADMIN, PIN_CHANGE, NEW_PIN, LAPORAN_ADMIN, \
+EDIT_CR_ADMIN, VISIT_MENU_ADMIN, ADD_CR, RENAME_CR, RECODE_CR, REMOVE_CR = range(1, 21)
 
 db = DBHelper()
 session = Session()
@@ -701,7 +701,7 @@ def admin_edit_cr_callback(update, context):
         admin_menu_handler(update, context)
         return MENU_ADMIN
     if data == "tks":
-        admin_add_rv_handler(update, context)
+        admin_add_cr_handler(update, context)
         return ADD_CR
     if data == "pnks":
         admin_rename_rv_handler(update, context)
@@ -715,7 +715,41 @@ def admin_edit_cr_callback(update, context):
 
 
 def admin_add_cr_callback(update, context):
-    pass
+    resp = update.message.text.split("\n")
+    global state_cv
+    # validasi data
+    for row in resp:
+        split = row.split("-")
+        if len(split) != 2:
+            admin_add_cr_handler(update, context, "gagal, terdapat kesalahan format penulisan")
+            return ADD_CR
+        if db.check_exist_code_cr(state_cv, split[1].strip()):
+            admin_add_cr_handler(update, context, 'gagal, kode pada "' + split[0].strip() + '" sudah dipakai')
+            return ADD_CR
+    # memasukkan data
+    for row in resp:
+        name, code = row.split("-")
+        db.add_category(state_cv, name.strip(), code.strip())
+    admin_add_cr_handler(update, context, "berhasil menambahkan data")
+    return ADD_CR
+
+
+def admin_add_cr_handler(update, context, notif=""):
+    msg = "menambahkan kategori visit" \
+          "\nformat penambahan : nama kategori - kode kategori" \
+          "\ncontoh: \nservice - S" \
+          "\nproduct - PD"
+    if len(notif) != 0:
+        msg += "\n*notifikasi: {}*".format(notif)
+    global admin_msg_id, admin_chat_id
+    msg = context.bot.send_message(
+        chat_id=update.effective_chat.id,
+        text=msg,
+        reply_markup=InlineKeyboardMarkup(config.admin_back_menu),
+        parse_mode=ParseMode.MARKDOWN
+    )
+    admin_msg_id = msg.message_id
+    admin_chat_id = msg.chat_id
 
 
 if __name__ == "__main__":

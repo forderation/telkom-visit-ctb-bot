@@ -193,12 +193,26 @@ class DBHelper:
             return True
         return False
 
+    def check_exist_code_cr(self, state_id, category_code):
+        cursor = self.conn.cursor()
+        query = "SELECT * FROM " + self.CATEGORY + " WHERE code_category = '" + str(category_code) + "' AND id_state = " + state_id
+        cursor.execute(query)
+        if cursor.fetchone() is None:
+            return False
+        return True
+
     def add_result_visit(self, category_id, code_vs, name_vs):
         cursor = self.conn.cursor()
         query = "SELECT id_state FROM " + self.CATEGORY + " WHERE id = " + str(category_id)
         id_state = cursor.execute(query).fetchone()[0]
         query = "INSERT INTO " + self.RESULT + " (name_result, code_result, id_category, id_state) VALUES (?,?,?,?)"
         cursor.execute(query, (name_vs, code_vs, category_id, id_state))
+        self.conn.commit()
+
+    def add_category(self, state_id, name_category, code_category):
+        cursor = self.conn.cursor()
+        query = "INSERT INTO " + self.CATEGORY + " (name_category, code_category, id_state) VALUES (?,?,?)"
+        cursor.execute(query, (name_category, code_category, state_id))
         self.conn.commit()
 
     def check_exist_id_rv(self, id_, category_id):
