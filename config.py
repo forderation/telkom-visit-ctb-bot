@@ -73,12 +73,11 @@ admin_state_menu = [
 ]
 
 admin_category_menu = [
-    [
-        InlineKeyboardButton("perbarui nama kategori", callback_data="pnk"),
-        InlineKeyboardButton("perbarui kode kategori", callback_data="pkk"),
-        InlineKeyboardButton("hapus kategori", callback_data="hk"),
-        InlineKeyboardButton("kembali ke menu utama", callback_data="kmu")
-    ]
+    [InlineKeyboardButton("kembali ke menu utama " + arrow_up, callback_data="kmu")],
+    [InlineKeyboardButton("tambah kategori visit " + plus, callback_data="tks")],
+    [InlineKeyboardButton("perbarui nama kategori visit " + pen, callback_data="pnks")],
+    [InlineKeyboardButton("perbarui kode kategori visit " + code, callback_data="pkks")],
+    [InlineKeyboardButton("hapus kategori visit " + remove, callback_data="hks")],
 ]
 
 admin_result_menu = [

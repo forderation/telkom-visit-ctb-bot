@@ -3,7 +3,7 @@ import logging
 import os
 
 import pandas as pd
-from telegram import InlineKeyboardMarkup, InlineKeyboardButton
+from telegram import InlineKeyboardMarkup, InlineKeyboardButton, ParseMode
 from telegram.ext import Updater, CommandHandler, Filters, MessageHandler, ConversationHandler, CallbackQueryHandler
 import config
 import token_telegram as tk
@@ -22,7 +22,8 @@ from session_chat import Session
 # case conversation handler admin
 
 PASSWD_ADMIN, EDIT_RV_ADMIN, ADD_RV, UDPATE_NAME_RV, UPDATE_CODE_RV, REMOVE_RV, RENAME_RV, RECODE_RV, \
-VISIT_RESULT_ADMIN, MENU_ADMIN, PIN_CHANGE, NEW_PIN, LAPORAN_ADMIN, VISIT_MENU_ADMIN = range(1, 15)
+    CATEGORY_RESULT_ADMIN, VISIT_RESULT_ADMIN, MENU_ADMIN, PIN_CHANGE, NEW_PIN, LAPORAN_ADMIN, \
+    EDIT_CR_ADMIN, VISIT_MENU_ADMIN = range(1, 17)
 
 db = DBHelper()
 session = Session()
@@ -33,6 +34,7 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 state_rv = -1
+state_cv = -1
 pin_admin = ""
 admin_msg_id = 0
 admin_chat_id = 0
@@ -313,7 +315,7 @@ def admin_start(update, context):
 def admin_menu_handler(update, context, add_msg=""):
     msg_send = "menu utama admin"
     if len(add_msg) != 0:
-        msg_send += "\nnotifikasi: {}".format(add_msg)
+        msg_send += "\n*notifikasi: {}*".format(add_msg)
     context.bot.edit_message_text(
         chat_id=admin_chat_id,
         message_id=admin_msg_id,
@@ -428,11 +430,11 @@ def admin_laporan_callback(update, context):
 
 def admin_vm_callback(update, context):
     data = update.callback_query.data
+    keyboard = config.admin_back_menu.copy()
     if data == "kmu":
         admin_menu_handler(update, context)
         return MENU_ADMIN
     if data == "rs_menu":
-        keyboard = config.admin_back_menu.copy()
         num_key = 1
         for id_key, category, state in db.get_category_visit():
             caption = f"{category} : {state}"
@@ -440,10 +442,8 @@ def admin_vm_callback(update, context):
                 keyboard.append([InlineKeyboardButton(caption, callback_data=id_key)])
                 num_key += 1
                 continue
-            if num_key <= 2:
+            if num_key == 2:
                 keyboard[len(keyboard) - 1].append(InlineKeyboardButton(caption, callback_data=id_key))
-                num_key += 1
-            if num_key >= 2:
                 num_key = 1
         context.bot.edit_message_text(
             chat_id=admin_chat_id,
@@ -452,6 +452,24 @@ def admin_vm_callback(update, context):
             reply_markup=InlineKeyboardMarkup(keyboard)
         )
         return VISIT_RESULT_ADMIN
+    if data == "ct_menu":
+        num_key = 1
+        for id_, state in db.get_state():
+            print(id_)
+            if num_key == 1:
+                keyboard.append([InlineKeyboardButton(state, callback_data=id_)])
+                num_key += 1
+                continue
+            if num_key == 2:
+                keyboard[len(keyboard) - 1].append(InlineKeyboardButton(state, callback_data=id_))
+                num_key = 1
+        context.bot.edit_message_text(
+            chat_id=admin_chat_id,
+            message_id=admin_msg_id,
+            text="pilih kategori state terlebih dahulu",
+            reply_markup=InlineKeyboardMarkup(keyboard)
+        )
+        return CATEGORY_RESULT_ADMIN
 
 
 def admin_vm_handler(update, context):
@@ -505,12 +523,13 @@ def admin_add_rv_handler(update, context, notif=""):
           "\ncontoh: \njarang digunakan - 1" \
           "\nrouter bermasalah - 2"
     if len(notif) != 0:
-        msg += "\nnotifkasi: " + notif
+        msg += "\n*notifikasi: {}*".format(notif)
     global admin_msg_id, admin_chat_id
     msg = context.bot.send_message(
         chat_id=update.effective_chat.id,
         text=msg,
-        reply_markup=InlineKeyboardMarkup(config.admin_back_menu)
+        reply_markup=InlineKeyboardMarkup(config.admin_back_menu),
+        parse_mode=ParseMode.MARKDOWN
     )
     admin_msg_id = msg.message_id
     admin_chat_id = msg.chat_id
@@ -550,12 +569,13 @@ def admin_rename_rv_handler(update, context, notif=""):
           "\ncontoh: \n1 - jarang digunakan" \
           "\n2 - router bermasalah"
     if len(notif) != 0:
-        msg += "\nnotifkasi: " + notif
+        msg += "\n*notifikasi: {}*".format(notif)
     global admin_msg_id, admin_chat_id
     msg = context.bot.send_message(
         chat_id=update.effective_chat.id,
         text=msg,
-        reply_markup=InlineKeyboardMarkup(config.admin_back_menu)
+        reply_markup=InlineKeyboardMarkup(config.admin_back_menu),
+        parse_mode=ParseMode.MARKDOWN
     )
     admin_msg_id = msg.message_id
     admin_chat_id = msg.chat_id
@@ -569,7 +589,7 @@ def admin_rename_rv_callback(update, context):
         if len(split) != 2:
             admin_rename_rv_handler(update, context, "gagal, terdapat kesalahan format penulisan")
             return RENAME_RV
-        if not (db.check_exist_id_rv(split[0].strip())):
+        if not (db.check_exist_id_rv(split[0].strip(), state_rv)):
             admin_rename_rv_handler(update, context, 'gagal, id pada "' + split[1].strip() + '" tidak ditemukan')
             return RENAME_RV
     for row in resp:
@@ -585,12 +605,31 @@ def admin_recode_rv_handler(update, context, notif=""):
           "\ncontoh: \n1 - 10" \
           "\n2 - 11"
     if len(notif) != 0:
-        msg += "\nnotifkasi: " + notif
+        msg += "\n*notifikasi: {}*".format(notif)
     global admin_msg_id, admin_chat_id
     msg = context.bot.send_message(
         chat_id=update.effective_chat.id,
         text=msg,
-        reply_markup=InlineKeyboardMarkup(config.admin_back_menu)
+        reply_markup=InlineKeyboardMarkup(config.admin_back_menu),
+        parse_mode=ParseMode.MARKDOWN
+    )
+    admin_msg_id = msg.message_id
+    admin_chat_id = msg.chat_id
+
+
+def admin_remove_rv_handler(update, context, notif=""):
+    msg = "menghapus data opsi hasil visit" \
+          "\nformat penghapusan data opsi : id" \
+          "\ncontoh: \n1" \
+          "\n2"
+    if len(notif) != 0:
+        msg += "\n*notifikasi: {}*".format(notif)
+    global admin_msg_id, admin_chat_id
+    msg = context.bot.send_message(
+        chat_id=update.effective_chat.id,
+        text=msg,
+        reply_markup=InlineKeyboardMarkup(config.admin_back_menu),
+        parse_mode=ParseMode.MARKDOWN
     )
     admin_msg_id = msg.message_id
     admin_chat_id = msg.chat_id
@@ -605,17 +644,68 @@ def admin_recode_rv_callback(update, context):
         if len(split) != 2:
             admin_recode_rv_handler(update, context, "gagal, terdapat kesalahan format penulisan")
             return RECODE_RV
-        if not (db.check_exist_id_rv(split[0].strip())):
+        if not (db.check_exist_id_rv(split[0].strip(), state_rv)):
             admin_recode_rv_handler(update, context, 'gagal, id pada kode "' + split[1].strip() + '" tidak ditemukan')
             return RECODE_RV
         if db.check_exist_code_rv(state_rv, split[1].strip()):
-            admin_recode_rv_handler(update, context, 'gagal, kode "' + split[1].strip() + '" sudah dipakai oleh data lainnya')
+            admin_recode_rv_handler(update, context,
+                                    'gagal, kode "' + split[1].strip() + '" sudah dipakai oleh data lainnya')
             return RECODE_RV
     for row in resp:
         id_, new_code = row.split("-")
         db.recode_result_visit(id_.strip(), new_code.strip())
     admin_recode_rv_handler(update, context, "berhasil mengganti kode hasil visit")
     return RECODE_RV
+
+
+def admin_remove_rv_callback(update, context):
+    resp = update.message.text.split("\n")
+    global state_rv
+    # validasi data
+    for id_ in resp:
+        if not (db.check_exist_id_rv(id_, state_rv)):
+            admin_remove_rv_handler(update, context, 'gagal, id pada kode "' + id_ + '" tidak ditemukan')
+            return REMOVE_RV
+    for id_ in resp:
+        db.remove_result_visit(id_.strip())
+    admin_remove_rv_handler(update, context, "berhasil menghapus opsi data hasil visit")
+    return REMOVE_RV
+
+
+def admin_choose_cr_callback(update, context):
+    state_id = update.callback_query.data
+    if state_id == "kmu":
+        admin_menu_handler(update, context)
+        return MENU_ADMIN
+    state = db.get_state_with_id(state_id)
+    msg = "daftar kategori visit pada state: {}\nid - nama - kode".format(state)
+    for _id, name, code in db.get_category_visit_with_state_id(state_id):
+        msg += f"\n{_id} - {name} - {code}"
+    global state_cv
+    state_cv = state_id
+    context.bot.edit_message_text(
+        chat_id=admin_chat_id,
+        message_id=admin_msg_id,
+        text=msg,
+        reply_markup=InlineKeyboardMarkup(config.admin_category_menu)
+    )
+    return EDIT_CR_ADMIN
+
+
+def admin_edit_cr_callback(update, context):
+    data = update.callback_query.data
+    if data == "kmu":
+        admin_menu_handler(update, context)
+        return MENU_ADMIN
+    if data == "ths":
+        admin_add_rv_handler(update, context)
+        return ADD_RV
+    if data == "pnhs":
+        admin_rename_rv_handler(update, context)
+        return RENAME_RV
+    if data == "pkhs":
+        admin_recode_rv_handler(update, context)
+        return RECODE_RV
 
 
 if __name__ == "__main__":
@@ -638,7 +728,9 @@ if __name__ == "__main__":
                 LAPORAN_ADMIN: [CallbackQueryHandler(admin_laporan_callback)],
                 VISIT_MENU_ADMIN: [CallbackQueryHandler(admin_vm_callback)],
                 VISIT_RESULT_ADMIN: [CallbackQueryHandler(admin_choose_rv_callback)],
+                CATEGORY_RESULT_ADMIN: [CallbackQueryHandler(admin_choose_cr_callback)],
                 EDIT_RV_ADMIN: [CallbackQueryHandler(admin_edit_rv_callback)],
+                EDIT_CR_ADMIN: [CallbackQueryHandler(admin_edit_cr_callback)],
                 ADD_RV: [
                     CallbackQueryHandler(admin_back_menu_callback),
                     MessageHandler(Filters.text, admin_add_rv_callback)
@@ -650,6 +742,10 @@ if __name__ == "__main__":
                 RECODE_RV: [
                     CallbackQueryHandler(admin_back_menu_callback),
                     MessageHandler(Filters.text, admin_recode_rv_callback)
+                ],
+                REMOVE_RV: [
+                    CallbackQueryHandler(admin_back_menu_callback),
+                    MessageHandler(Filters.regex(r'\d+$'), admin_remove_rv_callback)
                 ]
             }
         )

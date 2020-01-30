@@ -76,6 +76,18 @@ class DBHelper:
         cursor.execute("SELECT id, name_state FROM " + self.STATE)
         return cursor.fetchall()
 
+    def get_state_with_id(self, id_):
+        cursor = self.conn.cursor()
+        cursor.execute("SELECT name_state FROM " + self.STATE + " WHERE id = " + id_)
+        return cursor.fetchone()[0]
+
+    def get_category_visit_with_state_id(self, state_id):
+        cursor = self.conn.cursor()
+        query = "SELECT id, name_category, code_category FROM " + self.CATEGORY + " WHERE id_state = " + state_id
+        print(query)
+        cursor.execute(query)
+        return cursor.fetchall()
+
     def get_detail_code(self, id_state):
         cursor = self.conn.cursor()
         query = "SELECT name_result,{}.code_state, {}.code_category, code_result FROM ".format(self.STATE,
@@ -166,12 +178,14 @@ class DBHelper:
 
     def get_category_name(self, category_id):
         query = "SELECT name_category FROM " + self.CATEGORY + " WHERE id = " + str(category_id)
+        print(query)
         cursor = self.conn.cursor()
         cursor.execute(query)
         return cursor.fetchone()[0]
 
     def get_visit_result(self, category_id):
         query = "SELECT id, name_result, code_result FROM " + self.RESULT + " WHERE id_category = " + str(category_id)
+        print(category_id)
         cursor = self.conn.cursor()
         cursor.execute(query)
         return cursor.fetchall()
@@ -193,9 +207,9 @@ class DBHelper:
         cursor.execute(query, (name_vs, code_vs, category_id, id_state))
         self.conn.commit()
 
-    def check_exist_id_rv(self, id_):
+    def check_exist_id_rv(self, id_, category_id):
         cursor = self.conn.cursor()
-        query = "SELECT * FROM " + self.RESULT + " WHERE id = " + id_
+        query = "SELECT * FROM " + self.RESULT + " WHERE id = " + id_ + " AND id_category = " + category_id
         cursor.execute(query)
         if cursor.fetchone() is None:
             return False
@@ -210,6 +224,12 @@ class DBHelper:
     def recode_result_visit(self, id_, new_code):
         cursor = self.conn.cursor()
         query = "UPDATE " + self.RESULT + " SET code_result = '" + new_code + "' WHERE id = " + id_
+        cursor.execute(query)
+        self.conn.commit()
+
+    def remove_result_visit(self, id_):
+        cursor = self.conn.cursor()
+        query = "DELETE FOM " + self.RESULT + " WHERE id = '" + id_
         cursor.execute(query)
         self.conn.commit()
 
