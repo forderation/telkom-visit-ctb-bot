@@ -23,7 +23,7 @@ from session_chat import Session
 
 PASSWD_ADMIN, EDIT_RV_ADMIN, ADD_RV, UDPATE_NAME_RV, UPDATE_CODE_RV, REMOVE_RV, RENAME_RV, RECODE_RV, \
     CATEGORY_RESULT_ADMIN, VISIT_RESULT_ADMIN, MENU_ADMIN, PIN_CHANGE, NEW_PIN, LAPORAN_ADMIN, \
-    EDIT_CR_ADMIN, VISIT_MENU_ADMIN = range(1, 17)
+    EDIT_CR_ADMIN, VISIT_MENU_ADMIN, ADD_CR, RENAME_CR, RECODE_CR, REMOVE_CR = range(1, 21)
 
 db = DBHelper()
 session = Session()
@@ -495,6 +495,9 @@ def admin_edit_rv_callback(update, context):
     if data == "pkhs":
         admin_recode_rv_handler(update, context)
         return RECODE_RV
+    if data == "hhs":
+        admin_remove_rv_handler(update, context)
+        return REMOVE_RV
 
 
 def admin_choose_rv_callback(update, context):
@@ -697,15 +700,22 @@ def admin_edit_cr_callback(update, context):
     if data == "kmu":
         admin_menu_handler(update, context)
         return MENU_ADMIN
-    if data == "ths":
+    if data == "tks":
         admin_add_rv_handler(update, context)
-        return ADD_RV
-    if data == "pnhs":
+        return ADD_CR
+    if data == "pnks":
         admin_rename_rv_handler(update, context)
-        return RENAME_RV
-    if data == "pkhs":
+        return RENAME_CR
+    if data == "pkks":
         admin_recode_rv_handler(update, context)
-        return RECODE_RV
+        return RECODE_CR
+    if data == "hks":
+        admin_remove_rv_handler(update, context)
+        return REMOVE_CR
+
+
+def admin_add_cr_callback(update, context):
+    pass
 
 
 if __name__ == "__main__":
@@ -746,6 +756,19 @@ if __name__ == "__main__":
                 REMOVE_RV: [
                     CallbackQueryHandler(admin_back_menu_callback),
                     MessageHandler(Filters.regex(r'\d+$'), admin_remove_rv_callback)
+                ],
+                ADD_CR: [
+                    CallbackQueryHandler(admin_back_menu_callback),
+                    MessageHandler(Filters.text, admin_add_cr_callback)
+                ],
+                RENAME_CR: [
+
+                ],
+                RECODE_CR: [
+
+                ],
+                REMOVE_CR: [
+
                 ]
             }
         )

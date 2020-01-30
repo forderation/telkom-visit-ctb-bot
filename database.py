@@ -84,7 +84,6 @@ class DBHelper:
     def get_category_visit_with_state_id(self, state_id):
         cursor = self.conn.cursor()
         query = "SELECT id, name_category, code_category FROM " + self.CATEGORY + " WHERE id_state = " + state_id
-        print(query)
         cursor.execute(query)
         return cursor.fetchall()
 
@@ -113,13 +112,11 @@ class DBHelper:
     def sync_user_input(self, user_id, fullname, username):
         cursor = self.conn.cursor()
         query = "SELECT * FROM " + self.VISITOR + " WHERE id_visitor='" + user_id + "'"
-        print(query)
         cursor.execute(query)
         if not cursor.fetchall():
             query = "INSERT INTO " + self.VISITOR + \
                     " (id_visitor, name_visitor, username, total_submit, last_submit) " + \
                     "VALUES (?,?,?,1,(SELECT datetime('now','localtime')))"
-            print(query)
             cursor.execute(query, (user_id, fullname, username))
         else:
             query = "UPDATE " + self.VISITOR + \
@@ -127,7 +124,6 @@ class DBHelper:
                     "', total_submit = " \
                     "total_submit+1, last_submit " \
                     "= (SELECT datetime('now','localtime')) WHERE id_visitor = {}".format(user_id)
-            print(query)
             cursor.execute(query)
         self.conn.commit()
 
@@ -178,14 +174,12 @@ class DBHelper:
 
     def get_category_name(self, category_id):
         query = "SELECT name_category FROM " + self.CATEGORY + " WHERE id = " + str(category_id)
-        print(query)
         cursor = self.conn.cursor()
         cursor.execute(query)
         return cursor.fetchone()[0]
 
     def get_visit_result(self, category_id):
         query = "SELECT id, name_result, code_result FROM " + self.RESULT + " WHERE id_category = " + str(category_id)
-        print(category_id)
         cursor = self.conn.cursor()
         cursor.execute(query)
         return cursor.fetchall()
@@ -229,7 +223,7 @@ class DBHelper:
 
     def remove_result_visit(self, id_):
         cursor = self.conn.cursor()
-        query = "DELETE FOM " + self.RESULT + " WHERE id = '" + id_
+        query = "DELETE FROM " + self.RESULT + " WHERE id = " + id_
         cursor.execute(query)
         self.conn.commit()
 
