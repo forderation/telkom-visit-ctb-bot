@@ -704,7 +704,7 @@ def admin_edit_cr_callback(update, context):
         admin_add_cr_handler(update, context)
         return ADD_CR
     if data == "pnks":
-        admin_rename_rv_handler(update, context)
+        admin_rename_cr_handler(update, context)
         return RENAME_CR
     if data == "pkks":
         admin_recode_rv_handler(update, context)
@@ -734,6 +734,24 @@ def admin_add_cr_callback(update, context):
     return ADD_CR
 
 
+def admin_rename_cr_handler(update, context, notif=""):
+    msg = "mengganti nama kategori visit" \
+          "\nformat penggantian nama : id - nama baru kategori visit" \
+          "\ncontoh: \n1 - price" \
+          "\n2 - product"
+    if len(notif) != 0:
+        msg += "\n*notifikasi: {}*".format(notif)
+    global admin_msg_id, admin_chat_id
+    msg = context.bot.send_message(
+        chat_id=update.effective_chat.id,
+        text=msg,
+        reply_markup=InlineKeyboardMarkup(config.admin_back_menu),
+        parse_mode=ParseMode.MARKDOWN
+    )
+    admin_msg_id = msg.message_id
+    admin_chat_id = msg.chat_id
+
+
 def admin_add_cr_handler(update, context, notif=""):
     msg = "menambahkan kategori visit" \
           "\nformat penambahan : nama kategori - kode kategori" \
@@ -750,6 +768,24 @@ def admin_add_cr_handler(update, context, notif=""):
     )
     admin_msg_id = msg.message_id
     admin_chat_id = msg.chat_id
+
+
+def admin_rename_cr_callback(update, context):
+    resp = update.message.text.split("\n")
+    # validasi data
+    for row in resp:
+        split = row.split("-")
+        if len(split) != 2:
+            admin_rename_cr_handler(update, context, "gagal, terdapat kesalahan format penulisan")
+            return RENAME_CR
+        if not (db.check_exist_id_cr(split[0].strip(), state_cv)):
+            admin_rename_cr_handler(update, context, 'gagal, id pada "' + split[1].strip() + '" tidak ditemukan')
+            return RENAME_CR
+    for row in resp:
+        id_, new_name = row.split("-")
+        db.rename_category_visit(id_.strip(), new_name.strip())
+    admin_rename_cr_handler(update, context, "berhasil mengganti nama kategori visit")
+    return RENAME_CR
 
 
 if __name__ == "__main__":
@@ -796,7 +832,8 @@ if __name__ == "__main__":
                     MessageHandler(Filters.text, admin_add_cr_callback)
                 ],
                 RENAME_CR: [
-
+                    CallbackQueryHandler(admin_back_menu_callback),
+                    MessageHandler(Filters.text, admin_rename_cr_callback)
                 ],
                 RECODE_CR: [
 
