@@ -262,6 +262,12 @@ class DBHelper:
         cursor.execute(query)
         self.conn.commit()
 
+    def remove_category_visit(self, id_):
+        cursor = self.conn.cursor()
+        query = "DELETE FROM " + self.CATEGORY + " WHERE id = " + id_
+        cursor.execute(query)
+        self.conn.commit()
+
 
 db = DBHelper()
 # print(db.get_list_visitor())

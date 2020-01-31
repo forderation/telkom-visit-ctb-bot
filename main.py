@@ -455,7 +455,6 @@ def admin_vm_callback(update, context):
     if data == "ct_menu":
         num_key = 1
         for id_, state in db.get_state():
-            print(id_)
             if num_key == 1:
                 keyboard.append([InlineKeyboardButton(state, callback_data=id_)])
                 num_key += 1
@@ -710,7 +709,7 @@ def admin_edit_cr_callback(update, context):
         admin_recode_cr_handler(update, context)
         return RECODE_CR
     if data == "hks":
-        admin_remove_rv_handler(update, context)
+        admin_remove_cr_handler(update, context)
         return REMOVE_CR
 
 
@@ -828,6 +827,37 @@ def admin_recode_cr_handler(update, context, notif=""):
     admin_chat_id = msg.chat_id
 
 
+def admin_remove_cr_callback(update, context):
+    resp = update.message.text.split("\n")
+    # validasi data
+    for id_ in resp:
+        if not (db.check_exist_id_cr(id_, state_cv)):
+            admin_remove_cr_handler(update, context, 'gagal, id pada kode "' + id_ + '" tidak ditemukan')
+            return REMOVE_CR
+    for id_ in resp:
+        db.remove_category_visit(id_.strip())
+    admin_remove_cr_handler(update, context, "berhasil menghapus opsi data hasil visit")
+    return REMOVE_CR
+
+
+def admin_remove_cr_handler(update, context, notif=""):
+    msg = "menghapus data opsi kategori visit" \
+          "\nformat penghapusan data opsi : id" \
+          "\ncontoh: \n1" \
+          "\n2"
+    if len(notif) != 0:
+        msg += "\n*notifikasi: {}*".format(notif)
+    global admin_msg_id, admin_chat_id
+    msg = context.bot.send_message(
+        chat_id=update.effective_chat.id,
+        text=msg,
+        reply_markup=InlineKeyboardMarkup(config.admin_back_menu),
+        parse_mode=ParseMode.MARKDOWN
+    )
+    admin_msg_id = msg.message_id
+    admin_chat_id = msg.chat_id
+
+
 if __name__ == "__main__":
     if TOKEN == "":
         print("Token API kosong, tidak dapat menangani bot")
@@ -880,7 +910,8 @@ if __name__ == "__main__":
                     MessageHandler(Filters.text, admin_recode_cr_callback)
                 ],
                 REMOVE_CR: [
-
+                    CallbackQueryHandler(admin_back_menu_callback),
+                    MessageHandler(Filters.regex(r'\d+$'), admin_remove_cr_callback)
                 ]
             }
         )
