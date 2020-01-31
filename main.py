@@ -22,8 +22,8 @@ from session_chat import Session
 # case conversation handler admin
 
 PASSWD_ADMIN, EDIT_RV_ADMIN, ADD_RV, UDPATE_NAME_RV, UPDATE_CODE_RV, REMOVE_RV, RENAME_RV, RECODE_RV, \
-    CATEGORY_RESULT_ADMIN, VISIT_RESULT_ADMIN, MENU_ADMIN, PIN_CHANGE, NEW_PIN, LAPORAN_ADMIN, \
-    EDIT_CR_ADMIN, VISIT_MENU_ADMIN, ADD_CR, RENAME_CR, RECODE_CR, REMOVE_CR = range(1, 21)
+CATEGORY_RESULT_ADMIN, VISIT_RESULT_ADMIN, MENU_ADMIN, PIN_CHANGE, NEW_PIN, LAPORAN_ADMIN, \
+EDIT_CR_ADMIN, VISIT_MENU_ADMIN, ADD_CR, RENAME_CR, RECODE_CR, REMOVE_CR = range(1, 21)
 
 db = DBHelper()
 session = Session()
@@ -480,22 +480,42 @@ def admin_vm_handler(update, context):
     )
 
 
+rv_header = {
+    "ADD": "menambahkan hasil visit"
+           "\nformat penambahan : nama hasil visit - kode hasil visit"
+           "\ncontoh: \njarang digunakan - 1"
+           "\nrouter bermasalah - 2",
+    "RENAME": "mengganti nama hasil visit"
+              "\nformat penggantian nama : id - nama baru hasil visit"
+              "\ncontoh: \n1 - jarang digunakan"
+              "\n2 - router bermasalah",
+    "RECODE": "mengganti kode hasil visit"
+              "\nformat penggantian nama : id - kode baru hasil visit"
+              "\ncontoh: \n1 - 10"
+              "\n2 - 11",
+    "REMOVE": "menghapus data opsi hasil visit"
+              "\nformat penghapusan data opsi : id"
+              "\ncontoh: \n1"
+              "\n2"
+}
+
+
 def admin_edit_rv_callback(update, context):
     data = update.callback_query.data
     if data == "kmu":
         admin_menu_handler(update, context)
         return MENU_ADMIN
     if data == "ths":
-        admin_add_rv_handler(update, context)
+        admin_crud_handler(update, context, rv_header["ADD"])
         return ADD_RV
     if data == "pnhs":
-        admin_rename_rv_handler(update, context)
+        admin_crud_handler(update, context, rv_header["RENAME"])
         return RENAME_RV
     if data == "pkhs":
-        admin_recode_rv_handler(update, context)
+        admin_crud_handler(update, context, rv_header["RECODE"])
         return RECODE_RV
     if data == "hhs":
-        admin_remove_rv_handler(update, context)
+        admin_crud_handler(update, context, rv_header["REMOVE"])
         return REMOVE_RV
 
 
@@ -519,24 +539,6 @@ def admin_choose_rv_callback(update, context):
     return EDIT_RV_ADMIN
 
 
-def admin_add_rv_handler(update, context, notif=""):
-    msg = "menambahkan hasil visit" \
-          "\nformat penambahan : nama hasil visit - kode hasil visit" \
-          "\ncontoh: \njarang digunakan - 1" \
-          "\nrouter bermasalah - 2"
-    if len(notif) != 0:
-        msg += "\n*notifikasi: {}*".format(notif)
-    global admin_msg_id, admin_chat_id
-    msg = context.bot.send_message(
-        chat_id=update.effective_chat.id,
-        text=msg,
-        reply_markup=InlineKeyboardMarkup(config.admin_back_menu),
-        parse_mode=ParseMode.MARKDOWN
-    )
-    admin_msg_id = msg.message_id
-    admin_chat_id = msg.chat_id
-
-
 def admin_back_menu_callback(update, context):
     global state_rv
     data = update.callback_query.data
@@ -552,35 +554,18 @@ def admin_add_rv_callback(update, context):
     for row in resp:
         split = row.split("-")
         if len(split) != 2:
-            admin_add_rv_handler(update, context, "gagal, terdapat kesalahan format penulisan")
+            admin_crud_handler(update, context, rv_header["ADD"], "gagal, terdapat kesalahan format penulisan")
             return ADD_RV
         if db.check_exist_code_rv(state_rv, split[1].strip()):
-            admin_add_rv_handler(update, context, 'gagal, kode pada "' + split[0].strip() + '" sudah dipakai')
+            admin_crud_handler(update, context, rv_header["ADD"],
+                               'gagal, kode pada "' + split[0].strip() + '" sudah dipakai')
             return ADD_RV
     # memasukkan data
     for row in resp:
         name, code = row.split("-")
         db.add_result_visit(state_rv, code.strip(), name.strip())
-    admin_add_rv_handler(update, context, "berhasil menambahkan data")
+    admin_crud_handler(update, context, rv_header["ADD"], "berhasil menambahkan data")
     return ADD_RV
-
-
-def admin_rename_rv_handler(update, context, notif=""):
-    msg = "mengganti nama hasil visit" \
-          "\nformat penggantian nama : id - nama baru hasil visit" \
-          "\ncontoh: \n1 - jarang digunakan" \
-          "\n2 - router bermasalah"
-    if len(notif) != 0:
-        msg += "\n*notifikasi: {}*".format(notif)
-    global admin_msg_id, admin_chat_id
-    msg = context.bot.send_message(
-        chat_id=update.effective_chat.id,
-        text=msg,
-        reply_markup=InlineKeyboardMarkup(config.admin_back_menu),
-        parse_mode=ParseMode.MARKDOWN
-    )
-    admin_msg_id = msg.message_id
-    admin_chat_id = msg.chat_id
 
 
 def admin_rename_rv_callback(update, context):
@@ -589,52 +574,17 @@ def admin_rename_rv_callback(update, context):
     for row in resp:
         split = row.split("-")
         if len(split) != 2:
-            admin_rename_rv_handler(update, context, "gagal, terdapat kesalahan format penulisan")
+            admin_crud_handler(update, context, rv_header["RENAME"], "gagal, terdapat kesalahan format penulisan")
             return RENAME_RV
         if not (db.check_exist_id_rv(split[0].strip(), state_rv)):
-            admin_rename_rv_handler(update, context, 'gagal, id pada "' + split[1].strip() + '" tidak ditemukan')
+            admin_crud_handler(update, context, rv_header["RENAME"],
+                               'gagal, id pada "' + split[1].strip() + '" tidak ditemukan')
             return RENAME_RV
     for row in resp:
         id_, new_name = row.split("-")
         db.rename_result_visit(id_.strip(), new_name.strip())
-    admin_rename_rv_handler(update, context, "berhasil mengganti data nama visit")
+    admin_crud_handler(update, context, rv_header["RENAME"], "berhasil mengganti data nama visit")
     return RENAME_RV
-
-
-def admin_recode_rv_handler(update, context, notif=""):
-    msg = "mengganti kode hasil visit" \
-          "\nformat penggantian nama : id - kode baru hasil visit" \
-          "\ncontoh: \n1 - 10" \
-          "\n2 - 11"
-    if len(notif) != 0:
-        msg += "\n*notifikasi: {}*".format(notif)
-    global admin_msg_id, admin_chat_id
-    msg = context.bot.send_message(
-        chat_id=update.effective_chat.id,
-        text=msg,
-        reply_markup=InlineKeyboardMarkup(config.admin_back_menu),
-        parse_mode=ParseMode.MARKDOWN
-    )
-    admin_msg_id = msg.message_id
-    admin_chat_id = msg.chat_id
-
-
-def admin_remove_rv_handler(update, context, notif=""):
-    msg = "menghapus data opsi hasil visit" \
-          "\nformat penghapusan data opsi : id" \
-          "\ncontoh: \n1" \
-          "\n2"
-    if len(notif) != 0:
-        msg += "\n*notifikasi: {}*".format(notif)
-    global admin_msg_id, admin_chat_id
-    msg = context.bot.send_message(
-        chat_id=update.effective_chat.id,
-        text=msg,
-        reply_markup=InlineKeyboardMarkup(config.admin_back_menu),
-        parse_mode=ParseMode.MARKDOWN
-    )
-    admin_msg_id = msg.message_id
-    admin_chat_id = msg.chat_id
 
 
 def admin_recode_rv_callback(update, context):
@@ -644,19 +594,20 @@ def admin_recode_rv_callback(update, context):
     for row in resp:
         split = row.split("-")
         if len(split) != 2:
-            admin_recode_rv_handler(update, context, "gagal, terdapat kesalahan format penulisan")
+            admin_crud_handler(update, context, rv_header["RECODE"], "gagal, terdapat kesalahan format penulisan")
             return RECODE_RV
         if not (db.check_exist_id_rv(split[0].strip(), state_rv)):
-            admin_recode_rv_handler(update, context, 'gagal, id pada kode "' + split[1].strip() + '" tidak ditemukan')
+            admin_crud_handler(update, context, rv_header["RECODE"],
+                               'gagal, id pada kode "' + split[1].strip() + '" tidak ditemukan')
             return RECODE_RV
         if db.check_exist_code_rv(state_rv, split[1].strip()):
-            admin_recode_rv_handler(update, context,
-                                    'gagal, kode "' + split[1].strip() + '" sudah dipakai oleh data lainnya')
+            admin_crud_handler(update, context, rv_header["RECODE"],
+                               'gagal, kode "' + split[1].strip() + '" sudah dipakai oleh data lainnya')
             return RECODE_RV
     for row in resp:
         id_, new_code = row.split("-")
         db.recode_result_visit(id_.strip(), new_code.strip())
-    admin_recode_rv_handler(update, context, "berhasil mengganti kode hasil visit")
+    admin_crud_handler(update, context, rv_header["RECODE"], "berhasil mengganti kode hasil visit")
     return RECODE_RV
 
 
@@ -666,11 +617,12 @@ def admin_remove_rv_callback(update, context):
     # validasi data
     for id_ in resp:
         if not (db.check_exist_id_rv(id_, state_rv)):
-            admin_remove_rv_handler(update, context, 'gagal, id pada kode "' + id_ + '" tidak ditemukan')
+            admin_crud_handler(update, context, rv_header["REMOVE"],
+                               'gagal, id pada kode "' + id_ + '" tidak ditemukan')
             return REMOVE_RV
     for id_ in resp:
         db.remove_result_visit(id_.strip())
-    admin_remove_rv_handler(update, context, "berhasil menghapus opsi data hasil visit")
+    admin_crud_handler(update, context, rv_header["REMOVE"], "berhasil menghapus opsi data hasil visit")
     return REMOVE_RV
 
 
