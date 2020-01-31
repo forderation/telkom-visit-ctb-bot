@@ -73,7 +73,7 @@ class DBHelper:
 
     def get_state(self):
         cursor = self.conn.cursor()
-        cursor.execute("SELECT id, name_state FROM " + self.STATE)
+        cursor.execute("SELECT id, name_state, code_state FROM " + self.STATE)
         return cursor.fetchall()
 
     def get_state_with_id(self, id_):

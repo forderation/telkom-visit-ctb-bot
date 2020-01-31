@@ -64,12 +64,11 @@ admin_back_menu = [
 ]
 
 admin_state_menu = [
-    [
-        InlineKeyboardButton("perbarui nama state", callback_data="pns"),
-        InlineKeyboardButton("perbarui kode state", callback_data="pks"),
-        InlineKeyboardButton("hapus state", callback_data="hs"),
-        InlineKeyboardButton("kembali ke menu utama", callback_data="kmu")
-    ],
+    [InlineKeyboardButton("kembali ke menu utama " + arrow_up, callback_data="kmu")],
+    [InlineKeyboardButton("tambah state visit " + plus, callback_data="tss")],
+    [InlineKeyboardButton("perbarui nama state visit " + pen, callback_data="pnss")],
+    [InlineKeyboardButton("perbarui kode state visit " + code, callback_data="pkss")],
+    [InlineKeyboardButton("hapus state visit " + remove, callback_data="hss")],
 ]
 
 admin_category_menu = [

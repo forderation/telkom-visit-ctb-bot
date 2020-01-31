@@ -23,7 +23,65 @@ from session_chat import Session
 
 PASSWD_ADMIN, EDIT_RV_ADMIN, ADD_RV, UDPATE_NAME_RV, UPDATE_CODE_RV, REMOVE_RV, RENAME_RV, RECODE_RV, \
 CATEGORY_RESULT_ADMIN, VISIT_RESULT_ADMIN, MENU_ADMIN, PIN_CHANGE, NEW_PIN, LAPORAN_ADMIN, \
-EDIT_CR_ADMIN, VISIT_MENU_ADMIN, ADD_CR, RENAME_CR, RECODE_CR, REMOVE_CR = range(1, 21)
+EDIT_CR_ADMIN, VISIT_MENU_ADMIN, ADD_CR, RENAME_CR, RECODE_CR, REMOVE_CR, ADD_SV, RENAME_SV, RECODE_SV, \
+REMOVE_SV, EDIT_SV_ADMIN = range(1, 26)
+
+rv_header = {
+    "ADD": "menambahkan hasil visit"
+           "\nformat penambahan : nama hasil visit - kode hasil visit"
+           "\ncontoh: \njarang digunakan - 1"
+           "\nrouter bermasalah - 2",
+    "RENAME": "mengganti nama hasil visit"
+              "\nformat penggantian nama : id - nama baru hasil visit"
+              "\ncontoh: \n1 - jarang digunakan"
+              "\n2 - router bermasalah",
+    "RECODE": "mengganti kode hasil visit"
+              "\nformat penggantian nama : id - kode baru hasil visit"
+              "\ncontoh: \n1 - 10"
+              "\n2 - 11",
+    "REMOVE": "menghapus data opsi hasil visit"
+              "\nformat penghapusan data opsi : id"
+              "\ncontoh: \n1"
+              "\n2"
+}
+
+cr_header = {
+    "ADD": "menambahkan kategori visit"
+           "\nformat penambahan : nama kategori - kode kategori"
+           "\ncontoh: \nservice - S"
+           "\nproduct - PD",
+    "RENAME": "mengganti nama kategori visit"
+              "\nformat penggantian nama : id - nama baru kategori visit"
+              "\ncontoh: \n1 - price"
+              "\n2 - product",
+    "RECODE": "mengganti kode kategori visit"
+              "\nformat penggantian kode : id - kode kategori visit"
+              "\ncontoh: \n1 - C"
+              "\n2 - PD",
+    "REMOVE": "menghapus data opsi kategori visit"
+              "\nformat penghapusan data opsi : id"
+              "\ncontoh: \n1"
+              "\n2"
+}
+
+sv_header = {
+    "ADD": "menambahkan state visit"
+           "\nformat penambahan : nama state - kode state"
+           "\ncontoh: \ncontacted - A"
+           "\nnot contacted - B",
+    "RENAME": "mengganti nama state visit"
+              "\nformat penggantian nama : id - nama baru state visit"
+              "\ncontoh: \n1 - terkontak"
+              "\n2 - tidak ditemukan",
+    "RECODE": "mengganti kode state visit"
+              "\nformat penggantian kode : id - kode state visit"
+              "\ncontoh: \n1 - CT"
+              "\n2 - NCT",
+    "REMOVE": "menghapus data opsi state visit"
+              "\nformat penghapusan data opsi : id"
+              "\ncontoh: \n1"
+              "\n2"
+}
 
 db = DBHelper()
 session = Session()
@@ -125,7 +183,7 @@ def fallback_handler(update, context):
 
 def report_code(update, context):
     state_menu = []
-    for key, value in db.get_state():
+    for key, value, code in db.get_state():
         state_menu.append([InlineKeyboardButton(str(value), callback_data=str(key))])
     message = context.bot.send_message(
         chat_id=update.effective_chat.id,
@@ -454,7 +512,7 @@ def admin_vm_callback(update, context):
         return VISIT_RESULT_ADMIN
     if data == "ct_menu":
         num_key = 1
-        for id_, state in db.get_state():
+        for id_, state, code in db.get_state():
             if num_key == 1:
                 keyboard.append([InlineKeyboardButton(state, callback_data=id_)])
                 num_key += 1
@@ -469,6 +527,21 @@ def admin_vm_callback(update, context):
             reply_markup=InlineKeyboardMarkup(keyboard)
         )
         return CATEGORY_RESULT_ADMIN
+    if data == "sv_menu":
+        admin_edit_sv_handler(update, context)
+        return EDIT_SV_ADMIN
+
+
+def admin_edit_sv_handler(update, context):
+    msg = "daftar state visit: \nid - nama - kode"
+    for _id, name, code in db.get_state():
+        msg += f"\n{_id} - {name} - {code}"
+    context.bot.edit_message_text(
+        chat_id=admin_chat_id,
+        message_id=admin_msg_id,
+        text=msg,
+        reply_markup=InlineKeyboardMarkup(config.admin_state_menu)
+    )
 
 
 def admin_vm_handler(update, context):
@@ -480,24 +553,23 @@ def admin_vm_handler(update, context):
     )
 
 
-rv_header = {
-    "ADD": "menambahkan hasil visit"
-           "\nformat penambahan : nama hasil visit - kode hasil visit"
-           "\ncontoh: \njarang digunakan - 1"
-           "\nrouter bermasalah - 2",
-    "RENAME": "mengganti nama hasil visit"
-              "\nformat penggantian nama : id - nama baru hasil visit"
-              "\ncontoh: \n1 - jarang digunakan"
-              "\n2 - router bermasalah",
-    "RECODE": "mengganti kode hasil visit"
-              "\nformat penggantian nama : id - kode baru hasil visit"
-              "\ncontoh: \n1 - 10"
-              "\n2 - 11",
-    "REMOVE": "menghapus data opsi hasil visit"
-              "\nformat penghapusan data opsi : id"
-              "\ncontoh: \n1"
-              "\n2"
-}
+def admin_edit_sv_callback(update, context):
+    data = update.callback_query.data
+    if data == "kmu":
+        admin_menu_handler(update, context)
+        return MENU_ADMIN
+    if data == "tss":
+        admin_crud_handler(update, context, sv_header["ADD"])
+        return ADD_SV
+    if data == "pnss":
+        admin_crud_handler(update, context, sv_header["RENAME"])
+        return RENAME_SV
+    if data == "pkss":
+        admin_crud_handler(update, context, sv_header["RECODE"])
+        return RECODE_SV
+    if data == "hss":
+        admin_crud_handler(update, context, sv_header["REMOVE"])
+        return REMOVE_SV
 
 
 def admin_edit_rv_callback(update, context):
@@ -644,26 +716,6 @@ def admin_choose_cr_callback(update, context):
         reply_markup=InlineKeyboardMarkup(config.admin_category_menu)
     )
     return EDIT_CR_ADMIN
-
-
-cr_header = {
-    "ADD": "menambahkan kategori visit"
-           "\nformat penambahan : nama kategori - kode kategori"
-           "\ncontoh: \nservice - S"
-           "\nproduct - PD",
-    "RENAME": "mengganti nama kategori visit"
-              "\nformat penggantian nama : id - nama baru kategori visit"
-              "\ncontoh: \n1 - price"
-              "\n2 - product",
-    "RECODE": "mengganti kode kategori visit"
-              "\nformat penggantian kode : id - kode kategori visit"
-              "\ncontoh: \n1 - C"
-              "\n2 - PD",
-    "REMOVE": "menghapus data opsi kategori visit"
-              "\nformat penghapusan data opsi : id"
-              "\ncontoh: \n1"
-              "\n2"
-}
 
 
 def admin_edit_cr_callback(update, context):
@@ -831,6 +883,19 @@ if __name__ == "__main__":
                 REMOVE_CR: [
                     CallbackQueryHandler(admin_back_menu_callback),
                     MessageHandler(Filters.regex(r'\d+$'), admin_remove_cr_callback)
+                ],
+                EDIT_SV_ADMIN: [admin_edit_sv_callback],
+                ADD_SV: [
+
+                ],
+                RENAME_SV: [
+
+                ],
+                RECODE_SV: [
+
+                ],
+                REMOVE_SV: [
+
                 ]
             }
         )
