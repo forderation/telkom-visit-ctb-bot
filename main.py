@@ -829,6 +829,29 @@ def admin_remove_cr_callback(update, context):
     return REMOVE_CR
 
 
+def admin_add_sv_callback(update, context):
+    resp = update.message.text.split("\n")
+    for row in resp:
+        split = row.split("-")
+        if len(split) != 2:
+            admin_crud_handler(update, context, sv_header["ADD"], "gagal, terdapat kesalahan format penulisan")
+            return ADD_SV
+        if db.check_exist_code_sv(split[1]):
+            admin_crud_handler(update, context, sv_header["ADD"],
+                               'gagal, kode pada "' + split[0].strip() + '" sudah dipakai')
+            return ADD_SV
+    # memasukkan data
+    for row in resp:
+        name, code = row.split("-")
+        db.add_state(name.strip(), code.strip())
+    admin_crud_handler(update, context, sv_header["ADD"], "berhasil menambahkan data")
+    return ADD_SV
+
+
+def admin_rename_sv_callback(update, context):
+    pass
+
+
 if __name__ == "__main__":
     if TOKEN == "":
         print("Token API kosong, tidak dapat menangani bot")
@@ -886,10 +909,12 @@ if __name__ == "__main__":
                 ],
                 EDIT_SV_ADMIN: [admin_edit_sv_callback],
                 ADD_SV: [
-
+                    CallbackQueryHandler(admin_back_menu_callback),
+                    MessageHandler(Filters.text, admin_add_sv_callback)
                 ],
                 RENAME_SV: [
-
+                    CallbackQueryHandler(admin_back_menu_callback),
+                    MessageHandler(Filters.text, admin_rename_sv_callback)
                 ],
                 RECODE_SV: [
 

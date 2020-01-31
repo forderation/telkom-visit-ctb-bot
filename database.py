@@ -202,6 +202,14 @@ class DBHelper:
             return False
         return True
 
+    def check_exist_code_sv(self, state_code):
+        cursor = self.conn.cursor()
+        query = "SELECT * FROM " + self.STATE + " WHERE code_state = '" + str(state_code) + "'"
+        cursor.execute(query)
+        if cursor.fetchone() is None:
+            return False
+        return True
+
     def add_result_visit(self, category_id, code_vs, name_vs):
         cursor = self.conn.cursor()
         query = "SELECT id_state FROM " + self.CATEGORY + " WHERE id = " + str(category_id)
@@ -214,6 +222,12 @@ class DBHelper:
         cursor = self.conn.cursor()
         query = "INSERT INTO " + self.CATEGORY + " (name_category, code_category, id_state) VALUES (?,?,?)"
         cursor.execute(query, (name_category, code_category, state_id))
+        self.conn.commit()
+
+    def add_state(self, name_state, code_state):
+        cursor = self.conn.cursor()
+        query = "INSERT INTO " + self.STATE + " (name_state, code_state) VALUES (?,?)"
+        cursor.execute(query, (name_state, code_state))
         self.conn.commit()
 
     def check_exist_id_rv(self, id_, category_id):
