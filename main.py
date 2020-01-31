@@ -707,7 +707,7 @@ def admin_edit_cr_callback(update, context):
         admin_rename_cr_handler(update, context)
         return RENAME_CR
     if data == "pkks":
-        admin_recode_rv_handler(update, context)
+        admin_recode_cr_handler(update, context)
         return RECODE_CR
     if data == "hks":
         admin_remove_rv_handler(update, context)
@@ -788,6 +788,46 @@ def admin_rename_cr_callback(update, context):
     return RENAME_CR
 
 
+def admin_recode_cr_callback(update, context):
+    resp = update.message.text.split("\n")
+    # validasi data
+    for row in resp:
+        split = row.split("-")
+        if len(split) != 2:
+            admin_recode_cr_handler(update, context, "gagal, terdapat kesalahan format penulisan")
+            return RECODE_CR
+        if not (db.check_exist_id_cr(split[0].strip(), state_cv)):
+            admin_recode_cr_handler(update, context, 'gagal, id pada kode "' + split[1].strip() + '" tidak ditemukan')
+            return RECODE_CR
+        if db.check_exist_code_cr(state_cv, split[1].strip()):
+            admin_recode_cr_handler(update, context,
+                                    'gagal, kode "' + split[1].strip() + '" sudah dipakai oleh data lainnya')
+            return RECODE_CR
+    for row in resp:
+        id_, new_code = row.split("-")
+        db.recode_category_visit(id_.strip(), new_code.strip())
+    admin_recode_cr_handler(update, context, "berhasil mengganti kode kategori visit")
+    return RECODE_CR
+
+
+def admin_recode_cr_handler(update, context, notif=""):
+    msg = "mengganti kode kategori visit" \
+          "\nformat penggantian kode : id - kode kategori visit" \
+          "\ncontoh: \n1 - C" \
+          "\n2 - PD"
+    if len(notif) != 0:
+        msg += "\n*notifikasi: {}*".format(notif)
+    global admin_msg_id, admin_chat_id
+    msg = context.bot.send_message(
+        chat_id=update.effective_chat.id,
+        text=msg,
+        reply_markup=InlineKeyboardMarkup(config.admin_back_menu),
+        parse_mode=ParseMode.MARKDOWN
+    )
+    admin_msg_id = msg.message_id
+    admin_chat_id = msg.chat_id
+
+
 if __name__ == "__main__":
     if TOKEN == "":
         print("Token API kosong, tidak dapat menangani bot")
@@ -836,7 +876,8 @@ if __name__ == "__main__":
                     MessageHandler(Filters.text, admin_rename_cr_callback)
                 ],
                 RECODE_CR: [
-
+                    CallbackQueryHandler(admin_back_menu_callback),
+                    MessageHandler(Filters.text, admin_recode_cr_callback)
                 ],
                 REMOVE_CR: [
 

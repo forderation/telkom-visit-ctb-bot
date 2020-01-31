@@ -195,7 +195,8 @@ class DBHelper:
 
     def check_exist_code_cr(self, state_id, category_code):
         cursor = self.conn.cursor()
-        query = "SELECT * FROM " + self.CATEGORY + " WHERE code_category = '" + str(category_code) + "' AND id_state = " + state_id
+        query = "SELECT * FROM " + self.CATEGORY + " WHERE code_category = '" + str(
+            category_code) + "' AND id_state = " + state_id
         cursor.execute(query)
         if cursor.fetchone() is None:
             return False
@@ -240,6 +241,12 @@ class DBHelper:
     def rename_category_visit(self, id_, new_name):
         cursor = self.conn.cursor()
         query = "UPDATE " + self.CATEGORY + " SET name_category = '" + new_name + "' WHERE id = " + str(id_)
+        cursor.execute(query)
+        self.conn.commit()
+
+    def recode_category_visit(self, id_, new_code):
+        cursor = self.conn.cursor()
+        query = "UPDATE " + self.CATEGORY + " SET code_category = '" + new_code + "' WHERE id = " + str(id_)
         cursor.execute(query)
         self.conn.commit()
 
