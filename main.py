@@ -22,8 +22,8 @@ from session_chat import Session
 # case conversation handler admin
 
 PASSWD_ADMIN, EDIT_RV_ADMIN, ADD_RV, UDPATE_NAME_RV, UPDATE_CODE_RV, REMOVE_RV, RENAME_RV, RECODE_RV, \
-CATEGORY_RESULT_ADMIN, VISIT_RESULT_ADMIN, MENU_ADMIN, PIN_CHANGE, NEW_PIN, LAPORAN_ADMIN, \
-EDIT_CR_ADMIN, VISIT_MENU_ADMIN, ADD_CR, RENAME_CR, RECODE_CR, REMOVE_CR = range(1, 21)
+    CATEGORY_RESULT_ADMIN, VISIT_RESULT_ADMIN, MENU_ADMIN, PIN_CHANGE, NEW_PIN, LAPORAN_ADMIN, \
+    EDIT_CR_ADMIN, VISIT_MENU_ADMIN, ADD_CR, RENAME_CR, RECODE_CR, REMOVE_CR = range(1, 21)
 
 db = DBHelper()
 session = Session()
@@ -694,22 +694,42 @@ def admin_choose_cr_callback(update, context):
     return EDIT_CR_ADMIN
 
 
+cr_header = {
+    "ADD": "menambahkan kategori visit"
+           "\nformat penambahan : nama kategori - kode kategori"
+           "\ncontoh: \nservice - S"
+           "\nproduct - PD",
+    "RENAME": "mengganti nama kategori visit"
+              "\nformat penggantian nama : id - nama baru kategori visit"
+              "\ncontoh: \n1 - price"
+              "\n2 - product",
+    "RECODE": "mengganti kode kategori visit"
+              "\nformat penggantian kode : id - kode kategori visit"
+              "\ncontoh: \n1 - C"
+              "\n2 - PD",
+    "REMOVE": "menghapus data opsi kategori visit"
+              "\nformat penghapusan data opsi : id"
+              "\ncontoh: \n1"
+              "\n2"
+}
+
+
 def admin_edit_cr_callback(update, context):
     data = update.callback_query.data
     if data == "kmu":
         admin_menu_handler(update, context)
         return MENU_ADMIN
     if data == "tks":
-        admin_add_cr_handler(update, context)
+        admin_crud_handler(update, context, header=cr_header["ADD"])
         return ADD_CR
     if data == "pnks":
-        admin_rename_cr_handler(update, context)
+        admin_crud_handler(update, context, header=cr_header["RENAME"])
         return RENAME_CR
     if data == "pkks":
-        admin_recode_cr_handler(update, context)
+        admin_crud_handler(update, context, header=cr_header["RECODE"])
         return RECODE_CR
     if data == "hks":
-        admin_remove_cr_handler(update, context)
+        admin_crud_handler(update, context, header=cr_header["REMOVE"])
         return REMOVE_CR
 
 
@@ -720,42 +740,22 @@ def admin_add_cr_callback(update, context):
     for row in resp:
         split = row.split("-")
         if len(split) != 2:
-            admin_add_cr_handler(update, context, "gagal, terdapat kesalahan format penulisan")
+            admin_crud_handler(update, context, cr_header["ADD"], "gagal, terdapat kesalahan format penulisan")
             return ADD_CR
         if db.check_exist_code_cr(state_cv, split[1].strip()):
-            admin_add_cr_handler(update, context, 'gagal, kode pada "' + split[0].strip() + '" sudah dipakai')
+            admin_crud_handler(update, context, cr_header["ADD"],
+                               'gagal, kode pada "' + split[0].strip() + '" sudah dipakai')
             return ADD_CR
     # memasukkan data
     for row in resp:
         name, code = row.split("-")
         db.add_category(state_cv, name.strip(), code.strip())
-    admin_add_cr_handler(update, context, "berhasil menambahkan data")
+    admin_crud_handler(update, context, cr_header["ADD"], "berhasil menambahkan data")
     return ADD_CR
 
 
-def admin_rename_cr_handler(update, context, notif=""):
-    msg = "mengganti nama kategori visit" \
-          "\nformat penggantian nama : id - nama baru kategori visit" \
-          "\ncontoh: \n1 - price" \
-          "\n2 - product"
-    if len(notif) != 0:
-        msg += "\n*notifikasi: {}*".format(notif)
-    global admin_msg_id, admin_chat_id
-    msg = context.bot.send_message(
-        chat_id=update.effective_chat.id,
-        text=msg,
-        reply_markup=InlineKeyboardMarkup(config.admin_back_menu),
-        parse_mode=ParseMode.MARKDOWN
-    )
-    admin_msg_id = msg.message_id
-    admin_chat_id = msg.chat_id
-
-
-def admin_add_cr_handler(update, context, notif=""):
-    msg = "menambahkan kategori visit" \
-          "\nformat penambahan : nama kategori - kode kategori" \
-          "\ncontoh: \nservice - S" \
-          "\nproduct - PD"
+def admin_crud_handler(update, context, header="", notif=""):
+    msg = header
     if len(notif) != 0:
         msg += "\n*notifikasi: {}*".format(notif)
     global admin_msg_id, admin_chat_id
@@ -775,15 +775,16 @@ def admin_rename_cr_callback(update, context):
     for row in resp:
         split = row.split("-")
         if len(split) != 2:
-            admin_rename_cr_handler(update, context, "gagal, terdapat kesalahan format penulisan")
+            admin_crud_handler(update, context, cr_header["RENAME"], "gagal, terdapat kesalahan format penulisan")
             return RENAME_CR
         if not (db.check_exist_id_cr(split[0].strip(), state_cv)):
-            admin_rename_cr_handler(update, context, 'gagal, id pada "' + split[1].strip() + '" tidak ditemukan')
+            admin_crud_handler(update, context, cr_header["RENAME"],
+                               'gagal, id pada "' + split[1].strip() + '" tidak ditemukan')
             return RENAME_CR
     for row in resp:
         id_, new_name = row.split("-")
         db.rename_category_visit(id_.strip(), new_name.strip())
-    admin_rename_cr_handler(update, context, "berhasil mengganti nama kategori visit")
+    admin_crud_handler(update, context, cr_header["RENAME"], "berhasil mengganti nama kategori visit")
     return RENAME_CR
 
 
@@ -793,38 +794,21 @@ def admin_recode_cr_callback(update, context):
     for row in resp:
         split = row.split("-")
         if len(split) != 2:
-            admin_recode_cr_handler(update, context, "gagal, terdapat kesalahan format penulisan")
+            admin_crud_handler(update, context, cr_header["RECODE"], "gagal, terdapat kesalahan format penulisan")
             return RECODE_CR
         if not (db.check_exist_id_cr(split[0].strip(), state_cv)):
-            admin_recode_cr_handler(update, context, 'gagal, id pada kode "' + split[1].strip() + '" tidak ditemukan')
+            admin_crud_handler(update, context, cr_header["RECODE"],
+                               'gagal, id pada kode "' + split[1].strip() + '" tidak ditemukan')
             return RECODE_CR
         if db.check_exist_code_cr(state_cv, split[1].strip()):
-            admin_recode_cr_handler(update, context,
-                                    'gagal, kode "' + split[1].strip() + '" sudah dipakai oleh data lainnya')
+            admin_crud_handler(update, context, cr_header["RECODE"],
+                               'gagal, kode "' + split[1].strip() + '" sudah dipakai oleh data lainnya')
             return RECODE_CR
     for row in resp:
         id_, new_code = row.split("-")
         db.recode_category_visit(id_.strip(), new_code.strip())
-    admin_recode_cr_handler(update, context, "berhasil mengganti kode kategori visit")
+    admin_crud_handler(update, context, cr_header["RECODE"], "berhasil mengganti kode kategori visit")
     return RECODE_CR
-
-
-def admin_recode_cr_handler(update, context, notif=""):
-    msg = "mengganti kode kategori visit" \
-          "\nformat penggantian kode : id - kode kategori visit" \
-          "\ncontoh: \n1 - C" \
-          "\n2 - PD"
-    if len(notif) != 0:
-        msg += "\n*notifikasi: {}*".format(notif)
-    global admin_msg_id, admin_chat_id
-    msg = context.bot.send_message(
-        chat_id=update.effective_chat.id,
-        text=msg,
-        reply_markup=InlineKeyboardMarkup(config.admin_back_menu),
-        parse_mode=ParseMode.MARKDOWN
-    )
-    admin_msg_id = msg.message_id
-    admin_chat_id = msg.chat_id
 
 
 def admin_remove_cr_callback(update, context):
@@ -832,30 +816,13 @@ def admin_remove_cr_callback(update, context):
     # validasi data
     for id_ in resp:
         if not (db.check_exist_id_cr(id_, state_cv)):
-            admin_remove_cr_handler(update, context, 'gagal, id pada kode "' + id_ + '" tidak ditemukan')
+            admin_crud_handler(update, context, cr_header["REMOVE"],
+                               'gagal, id pada kode "' + id_ + '" tidak ditemukan')
             return REMOVE_CR
     for id_ in resp:
         db.remove_category_visit(id_.strip())
-    admin_remove_cr_handler(update, context, "berhasil menghapus opsi data hasil visit")
+    admin_crud_handler(update, context, cr_header["REMOVE"], "berhasil menghapus opsi data hasil visit")
     return REMOVE_CR
-
-
-def admin_remove_cr_handler(update, context, notif=""):
-    msg = "menghapus data opsi kategori visit" \
-          "\nformat penghapusan data opsi : id" \
-          "\ncontoh: \n1" \
-          "\n2"
-    if len(notif) != 0:
-        msg += "\n*notifikasi: {}*".format(notif)
-    global admin_msg_id, admin_chat_id
-    msg = context.bot.send_message(
-        chat_id=update.effective_chat.id,
-        text=msg,
-        reply_markup=InlineKeyboardMarkup(config.admin_back_menu),
-        parse_mode=ParseMode.MARKDOWN
-    )
-    admin_msg_id = msg.message_id
-    admin_chat_id = msg.chat_id
 
 
 if __name__ == "__main__":
