@@ -246,6 +246,14 @@ class DBHelper:
             return False
         return True
 
+    def check_exist_id_sv(self, state_id):
+        cursor = self.conn.cursor()
+        query = "SELECT * FROM " + self.STATE + " WHERE id = " + str(state_id)
+        cursor.execute(query)
+        if cursor.fetchone() is None:
+            return False
+        return True
+
     def rename_result_visit(self, id_, new_name):
         cursor = self.conn.cursor()
         query = "UPDATE " + self.RESULT + " SET name_result = '" + new_name + "' WHERE id = " + id_
@@ -255,6 +263,12 @@ class DBHelper:
     def rename_category_visit(self, id_, new_name):
         cursor = self.conn.cursor()
         query = "UPDATE " + self.CATEGORY + " SET name_category = '" + new_name + "' WHERE id = " + str(id_)
+        cursor.execute(query)
+        self.conn.commit()
+
+    def rename_state_visit(self, id_, new_name):
+        cursor = self.conn.cursor()
+        query = "UPDATE " + self.STATE + " SET name_state = '" + new_name + "' WHERE id = " + str(id_)
         cursor.execute(query)
         self.conn.commit()
 

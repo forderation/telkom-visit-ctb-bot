@@ -849,7 +849,22 @@ def admin_add_sv_callback(update, context):
 
 
 def admin_rename_sv_callback(update, context):
-    pass
+    resp = update.message.text.split("\n")
+    # validasi data
+    for row in resp:
+        split = row.split("-")
+        if len(split) != 2:
+            admin_crud_handler(update, context, sv_header["RENAME"], "gagal, terdapat kesalahan format penulisan")
+            return RENAME_SV
+        if not (db.check_exist_id_sv(split[0].strip())):
+            admin_crud_handler(update, context, sv_header["RENAME"],
+                               'gagal, id pada "' + split[1].strip() + '" tidak ditemukan')
+            return RENAME_SV
+    for row in resp:
+        id_, new_name = row.split("-")
+        db.rename_state_visit(id_.strip(), new_name.strip())
+    admin_crud_handler(update, context, sv_header["RENAME"], "berhasil mengganti nama state visit")
+    return RENAME_SV
 
 
 if __name__ == "__main__":
