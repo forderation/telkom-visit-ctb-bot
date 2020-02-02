@@ -847,6 +847,24 @@ def admin_remove_sv_callback(update, context):
     return REMOVE_SV
 
 
+def code_csv(update, context):
+    all_code = db.get_all_code()
+    df = pd.DataFrame(
+        all_code,
+        columns=["code state", "code category", "code result", "id result", "id state",
+                 "id category", "name state", "name category", "name result"]
+    )
+    df = df.drop(["id result", "id state", "id category"], axis=1)
+    df["kode input"] = df.apply(
+        lambda row: "{}.{}.{}".format(row["code state"], row["code category"], row["code result"]), axis=1)
+    df.to_excel("code list.xlsx", index=False)
+    context.bot.send_document(
+        chat_id=update.effective_chat.id,
+        document=open("code list.xlsx", 'rb'),
+        filename="list kode.xlsx"
+    )
+
+
 if __name__ == "__main__":
     if TOKEN == "":
         print("Token API kosong, tidak dapat menangani bot")
@@ -931,6 +949,7 @@ if __name__ == "__main__":
         up.dispatcher.add_handler(CommandHandler('input_visit', input_visit_callback))
         up.dispatcher.add_handler(CommandHandler('submit_visit', submit_visit))
         up.dispatcher.add_handler(CommandHandler('report_code', report_code))
+        up.dispatcher.add_handler(CommandHandler('code_csv', code_csv))
         up.dispatcher.add_handler(CallbackQueryHandler(callback_code))
         print("Making conversation done")
         up.start_polling()
