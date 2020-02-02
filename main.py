@@ -1,4 +1,3 @@
-import datetime
 import logging
 import os
 
@@ -10,6 +9,7 @@ import token_telegram as tk
 from config import num_keyboard, sv_header, cr_header, rv_header
 from database import DBHelper
 from session_chat import Session
+from datetime import datetime
 
 # command list
 # input_visit - memulai sesi input data visit
@@ -22,9 +22,9 @@ from session_chat import Session
 # case conversation handler admin
 
 PASSWD_ADMIN, EDIT_RV_ADMIN, ADD_RV, UDPATE_NAME_RV, UPDATE_CODE_RV, REMOVE_RV, RENAME_RV, RECODE_RV, \
-CATEGORY_RESULT_ADMIN, VISIT_RESULT_ADMIN, MENU_ADMIN, PIN_CHANGE, NEW_PIN, LAPORAN_ADMIN, \
-EDIT_CR_ADMIN, VISIT_MENU_ADMIN, ADD_CR, RENAME_CR, RECODE_CR, REMOVE_CR, ADD_SV, RENAME_SV, RECODE_SV, \
-REMOVE_SV, EDIT_SV_ADMIN = range(1, 26)
+    CATEGORY_RESULT_ADMIN, VISIT_RESULT_ADMIN, MENU_ADMIN, PIN_CHANGE, NEW_PIN, LAPORAN_ADMIN, \
+    EDIT_CR_ADMIN, VISIT_MENU_ADMIN, ADD_CR, RENAME_CR, RECODE_CR, REMOVE_CR, ADD_SV, RENAME_SV, RECODE_SV, \
+    REMOVE_SV, EDIT_SV_ADMIN = range(1, 26)
 
 db = DBHelper()
 session = Session()
@@ -168,8 +168,7 @@ def photo_visit_callback(update, context):
     if session.is_user_active(user_id):
         if session.is_visited(user_id):
             photo_id = update.message.photo[-1].file_id
-            photo_path = context.bot.get_file(photo_id).file_path
-            session.add_photo(user_id, photo_path)
+            session.add_photo(user_id, photo_id)
 
 
 def msg_error(msg, update, context):
@@ -205,7 +204,7 @@ def input_visit_callback(update, context):
             msg_error(msgerr, update, context)
             return
         idx_code = menu_code.index(visit_code)
-        date_now = datetime.datetime.today()
+        date_now = datetime.today()
         idx_visit_code = option_code[idx_code][2]
         caption = option_code[idx_code][3]
         date = "{}-{}-{}".format(date_now.year, date_now.month, date_now.day)
@@ -244,9 +243,20 @@ def submit_visit(update, context):
             text="@{} {}".format(username, msg_resp)
         )
         return
+    # save photo to local data base
+    cur_dir = os.getcwd()
+    user_path = cur_dir + "/res/img/" + str(datetime.today().strftime('%Y-%m-%d')) + "/" + user_id
+    if not (os.path.exists(user_path)):
+        os.makedirs(user_path, 0o777)
+    photo_paths = []
+    for photo_id in session.get_photo(user_id):
+        photo_path = user_path + "/" + photo_id + ".jpg"
+        context.bot.get_file(photo_id).download(photo_path)
+        photo_paths.append(photo_path)
+    # add user to total submit if exist else create new user data
     db.sync_user_input(user_id, fullname(update), username)
     id_visit = db.add_visit(user_id, session.get_session(user_id))
-    db.add_photo(user_id, id_visit, session.get_session(user_id)["photo"])
+    db.add_photo(user_id, id_visit, photo_paths)
     session.remove_user(user_id)
     context.bot.send_message(
         chat_id=update.effective_chat.id,
@@ -856,7 +866,7 @@ def code_csv(update, context):
     )
     df = df.drop(["id result", "id state", "id category"], axis=1)
     df["kode input"] = df.apply(
-        lambda row: "{}.{}.{}".format(row["code state"], row["code category"], row["code result"]), axis=1)
+        lambda row: "{}{}{}".format(row["code state"], row["code category"], row["code result"]), axis=1)
     df.to_excel("code list.xlsx", index=False)
     context.bot.send_document(
         chat_id=update.effective_chat.id,

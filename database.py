@@ -144,7 +144,7 @@ class DBHelper:
             query = "SELECT photo_path FROM " + self.PHOTO + " WHERE id_visit = '" + str(id_hist) + "'"
             cursor_ph.execute(query)
             photos = cursor_ph.fetchall()
-            date = row[1].split(" ")[0]
+            date = row[1]
             nip = row[2]
             other_desc = row[3]
             name_visitor = row[10]
@@ -317,3 +317,4 @@ db = DBHelper()
 # print(db.get_category_visit())
 # print(db.check_exist_code_rv(1, 12))
 # db.add_result_vist(1)
+print(db.get_report_hist())
