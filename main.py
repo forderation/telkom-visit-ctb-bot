@@ -7,7 +7,7 @@ from telegram import InlineKeyboardMarkup, InlineKeyboardButton, ParseMode
 from telegram.ext import Updater, CommandHandler, Filters, MessageHandler, ConversationHandler, CallbackQueryHandler
 import config
 import token_telegram as tk
-from config import num_keyboard
+from config import num_keyboard, sv_header, cr_header, rv_header
 from database import DBHelper
 from session_chat import Session
 
@@ -22,66 +22,9 @@ from session_chat import Session
 # case conversation handler admin
 
 PASSWD_ADMIN, EDIT_RV_ADMIN, ADD_RV, UDPATE_NAME_RV, UPDATE_CODE_RV, REMOVE_RV, RENAME_RV, RECODE_RV, \
-CATEGORY_RESULT_ADMIN, VISIT_RESULT_ADMIN, MENU_ADMIN, PIN_CHANGE, NEW_PIN, LAPORAN_ADMIN, \
-EDIT_CR_ADMIN, VISIT_MENU_ADMIN, ADD_CR, RENAME_CR, RECODE_CR, REMOVE_CR, ADD_SV, RENAME_SV, RECODE_SV, \
-REMOVE_SV, EDIT_SV_ADMIN = range(1, 26)
-
-rv_header = {
-    "ADD": "menambahkan hasil visit"
-           "\nformat penambahan : nama hasil visit - kode hasil visit"
-           "\ncontoh: \njarang digunakan - 1"
-           "\nrouter bermasalah - 2",
-    "RENAME": "mengganti nama hasil visit"
-              "\nformat penggantian nama : id - nama baru hasil visit"
-              "\ncontoh: \n1 - jarang digunakan"
-              "\n2 - router bermasalah",
-    "RECODE": "mengganti kode hasil visit"
-              "\nformat penggantian nama : id - kode baru hasil visit"
-              "\ncontoh: \n1 - 10"
-              "\n2 - 11",
-    "REMOVE": "menghapus data opsi hasil visit"
-              "\nformat penghapusan data opsi : id"
-              "\ncontoh: \n1"
-              "\n2"
-}
-
-cr_header = {
-    "ADD": "menambahkan kategori visit"
-           "\nformat penambahan : nama kategori - kode kategori"
-           "\ncontoh: \nservice - S"
-           "\nproduct - PD",
-    "RENAME": "mengganti nama kategori visit"
-              "\nformat penggantian nama : id - nama baru kategori visit"
-              "\ncontoh: \n1 - price"
-              "\n2 - product",
-    "RECODE": "mengganti kode kategori visit"
-              "\nformat penggantian kode : id - kode kategori visit"
-              "\ncontoh: \n1 - C"
-              "\n2 - PD",
-    "REMOVE": "menghapus data opsi kategori visit"
-              "\nformat penghapusan data opsi : id"
-              "\ncontoh: \n1"
-              "\n2"
-}
-
-sv_header = {
-    "ADD": "menambahkan state visit"
-           "\nformat penambahan : nama state - kode state"
-           "\ncontoh: \ncontacted - A"
-           "\nnot contacted - B",
-    "RENAME": "mengganti nama state visit"
-              "\nformat penggantian nama : id - nama baru state visit"
-              "\ncontoh: \n1 - terkontak"
-              "\n2 - tidak ditemukan",
-    "RECODE": "mengganti kode state visit"
-              "\nformat penggantian kode : id - kode state visit"
-              "\ncontoh: \n1 - CT"
-              "\n2 - NCT",
-    "REMOVE": "menghapus data opsi state visit"
-              "\nformat penghapusan data opsi : id"
-              "\ncontoh: \n1"
-              "\n2"
-}
+    CATEGORY_RESULT_ADMIN, VISIT_RESULT_ADMIN, MENU_ADMIN, PIN_CHANGE, NEW_PIN, LAPORAN_ADMIN, \
+    EDIT_CR_ADMIN, VISIT_MENU_ADMIN, ADD_CR, RENAME_CR, RECODE_CR, REMOVE_CR, ADD_SV, RENAME_SV, RECODE_SV, \
+    REMOVE_SV, EDIT_SV_ADMIN = range(1, 26)
 
 db = DBHelper()
 session = Session()
@@ -867,6 +810,29 @@ def admin_rename_sv_callback(update, context):
     return RENAME_SV
 
 
+def admin_recode_sv_callback(update, context):
+    resp = update.message.text.split("\n")
+    # validasi data
+    for row in resp:
+        split = row.split("-")
+        if len(split) != 2:
+            admin_crud_handler(update, context, sv_header["RECODE"], "gagal, terdapat kesalahan format penulisan")
+            return RECODE_SV
+        if not (db.check_exist_id_sv(split[0].strip())):
+            admin_crud_handler(update, context, sv_header["RECODE"],
+                               'gagal, id pada kode "' + split[1].strip() + '" tidak ditemukan')
+            return RECODE_SV
+        if db.check_exist_code_sv(split[1].strip()):
+            admin_crud_handler(update, context, sv_header["RECODE"],
+                               'gagal, kode "' + split[1].strip() + '" sudah dipakai oleh data lainnya')
+            return RECODE_SV
+    for row in resp:
+        id_, new_code = row.split("-")
+        db.recode_state_visit(id_.strip(), new_code.strip())
+    admin_crud_handler(update, context, sv_header["RECODE"], "berhasil mengganti kode state visit")
+    return RECODE_SV
+
+
 if __name__ == "__main__":
     if TOKEN == "":
         print("Token API kosong, tidak dapat menangani bot")
@@ -932,7 +898,8 @@ if __name__ == "__main__":
                     MessageHandler(Filters.text, admin_rename_sv_callback)
                 ],
                 RECODE_SV: [
-
+                    CallbackQueryHandler(admin_back_menu_callback),
+                    MessageHandler(Filters.text, admin_recode_sv_callback)
                 ],
                 REMOVE_SV: [
 

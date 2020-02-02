@@ -86,3 +86,61 @@ admin_result_menu = [
     [InlineKeyboardButton("perbarui kode hasil visit " + code, callback_data="pkhs")],
     [InlineKeyboardButton("hapus hasil visit " + remove, callback_data="hhs")],
 ]
+
+
+rv_header = {
+    "ADD": "menambahkan hasil visit"
+           "\nformat penambahan : nama hasil visit - kode hasil visit"
+           "\ncontoh: \njarang digunakan - 1"
+           "\nrouter bermasalah - 2",
+    "RENAME": "mengganti nama hasil visit"
+              "\nformat penggantian nama : id - nama baru hasil visit"
+              "\ncontoh: \n1 - jarang digunakan"
+              "\n2 - router bermasalah",
+    "RECODE": "mengganti kode hasil visit"
+              "\nformat penggantian nama : id - kode baru hasil visit"
+              "\ncontoh: \n1 - 10"
+              "\n2 - 11",
+    "REMOVE": "menghapus data opsi hasil visit"
+              "\nformat penghapusan data opsi : id"
+              "\ncontoh: \n1"
+              "\n2"
+}
+
+cr_header = {
+    "ADD": "menambahkan kategori visit"
+           "\nformat penambahan : nama kategori - kode kategori"
+           "\ncontoh: \nservice - S"
+           "\nproduct - PD",
+    "RENAME": "mengganti nama kategori visit"
+              "\nformat penggantian nama : id - nama baru kategori visit"
+              "\ncontoh: \n1 - price"
+              "\n2 - product",
+    "RECODE": "mengganti kode kategori visit"
+              "\nformat penggantian kode : id - kode kategori visit"
+              "\ncontoh: \n1 - C"
+              "\n2 - PD",
+    "REMOVE": "menghapus data opsi kategori visit"
+              "\nformat penghapusan data opsi : id"
+              "\ncontoh: \n1"
+              "\n2"
+}
+
+sv_header = {
+    "ADD": "menambahkan state visit"
+           "\nformat penambahan : nama state - kode state"
+           "\ncontoh: \ncontacted - A"
+           "\nnot contacted - B",
+    "RENAME": "mengganti nama state visit"
+              "\nformat penggantian nama : id - nama baru state visit"
+              "\ncontoh: \n1 - terkontak"
+              "\n2 - tidak ditemukan",
+    "RECODE": "mengganti kode state visit"
+              "\nformat penggantian kode : id - kode state visit"
+              "\ncontoh: \n1 - CT"
+              "\n2 - NCT",
+    "REMOVE": "menghapus data opsi state visit"
+              "\nformat penghapusan data opsi : id"
+              "\ncontoh: \n1"
+              "\n2"
+}
