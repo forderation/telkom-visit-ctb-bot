@@ -22,9 +22,9 @@ from session_chat import Session
 # case conversation handler admin
 
 PASSWD_ADMIN, EDIT_RV_ADMIN, ADD_RV, UDPATE_NAME_RV, UPDATE_CODE_RV, REMOVE_RV, RENAME_RV, RECODE_RV, \
-    CATEGORY_RESULT_ADMIN, VISIT_RESULT_ADMIN, MENU_ADMIN, PIN_CHANGE, NEW_PIN, LAPORAN_ADMIN, \
-    EDIT_CR_ADMIN, VISIT_MENU_ADMIN, ADD_CR, RENAME_CR, RECODE_CR, REMOVE_CR, ADD_SV, RENAME_SV, RECODE_SV, \
-    REMOVE_SV, EDIT_SV_ADMIN = range(1, 26)
+CATEGORY_RESULT_ADMIN, VISIT_RESULT_ADMIN, MENU_ADMIN, PIN_CHANGE, NEW_PIN, LAPORAN_ADMIN, \
+EDIT_CR_ADMIN, VISIT_MENU_ADMIN, ADD_CR, RENAME_CR, RECODE_CR, REMOVE_CR, ADD_SV, RENAME_SV, RECODE_SV, \
+REMOVE_SV, EDIT_SV_ADMIN = range(1, 26)
 
 db = DBHelper()
 session = Session()
@@ -833,6 +833,20 @@ def admin_recode_sv_callback(update, context):
     return RECODE_SV
 
 
+def admin_remove_sv_callback(update, context):
+    resp = update.message.text.split("\n")
+    # validasi data
+    for id_ in resp:
+        if not (db.check_exist_id_sv(id_)):
+            admin_crud_handler(update, context, sv_header["REMOVE"],
+                               'gagal, id pada kode "' + id_ + '" tidak ditemukan')
+            return REMOVE_SV
+    for id_ in resp:
+        db.remove_state_visit(id_.strip())
+    admin_crud_handler(update, context, sv_header["REMOVE"], "berhasil menghapus opsi data state visit")
+    return REMOVE_SV
+
+
 if __name__ == "__main__":
     if TOKEN == "":
         print("Token API kosong, tidak dapat menangani bot")
@@ -902,7 +916,8 @@ if __name__ == "__main__":
                     MessageHandler(Filters.text, admin_recode_sv_callback)
                 ],
                 REMOVE_SV: [
-
+                    CallbackQueryHandler(admin_back_menu_callback),
+                    MessageHandler(Filters.regex(r'\d+$'), admin_remove_sv_callback)
                 ]
             }
         )

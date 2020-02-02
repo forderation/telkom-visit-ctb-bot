@@ -302,6 +302,12 @@ class DBHelper:
         cursor.execute(query)
         self.conn.commit()
 
+    def remove_state_visit(self, id_):
+        cursor = self.conn.cursor()
+        query = "DELETE FROM " + self.STATE + " WHERE id = " + id_
+        cursor.execute(query)
+        self.conn.commit()
+
 
 db = DBHelper()
 # print(db.get_list_visitor())
