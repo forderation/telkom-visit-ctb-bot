@@ -1,15 +1,6 @@
-#!/usr/bin/env python3
-#
-# A library that allows to create an inline calendar keyboard.
-# grcanosa https://github.com/grcanosa
-#
-"""
-Base methods for calendar keyboard creation and processing.
-"""
-
 import calendar
 import datetime
-
+from config import remove
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup
 
 
@@ -60,7 +51,7 @@ def create_calendar(year=None, month=None):
            InlineKeyboardButton(" ", callback_data=data_ignore),
            InlineKeyboardButton(">", callback_data=create_callback_data("NEXT-MONTH", year, month, day))]
     keyboard.append(row)
-
+    keyboard.append([InlineKeyboardButton("batalkan " + remove, callback_data="CANCEL")])
     return InlineKeyboardMarkup(keyboard)
 
 
@@ -73,8 +64,11 @@ def process_calendar_selection(update, context):
     :return: Returns a tuple (Boolean,datetime.datetime), indicating if a date is selected
                 and returning the date if so.
     """
-    ret_data = (False, None)
+    ret_data = [False, False, None]
     query = update.callback_query
+    if query.data == "CANCEL":
+        ret_data[1] = True
+        return ret_data
     (action, year, month, day) = separate_callback_data(query.data)
     curr = datetime.datetime(int(year), int(month), 1)
     if action == "IGNORE":
@@ -84,7 +78,7 @@ def process_calendar_selection(update, context):
                                       chat_id=query.message.chat_id,
                                       message_id=query.message.message_id
                                       )
-        ret_data = True, datetime.datetime(int(year), int(month), int(day))
+        ret_data = [True, False, datetime.datetime(int(year), int(month), int(day))]
     elif action == "PREV-MONTH":
         pre = curr - datetime.timedelta(days=1)
         context.bot.edit_message_text(text=query.message.text,

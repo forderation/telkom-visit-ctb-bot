@@ -79,14 +79,11 @@ admin_category_menu = [
     [InlineKeyboardButton("hapus kategori visit " + remove, callback_data="hks")],
 ]
 
-admin_result_menu = [
+date_choose = [
     [InlineKeyboardButton("kembali ke menu utama " + arrow_up, callback_data="kmu")],
-    [InlineKeyboardButton("tambah hasil visit " + plus, callback_data="ths")],
-    [InlineKeyboardButton("perbarui nama hasil visit " + pen, callback_data="pnhs")],
-    [InlineKeyboardButton("perbarui kode hasil visit " + code, callback_data="pkhs")],
-    [InlineKeyboardButton("hapus hasil visit " + remove, callback_data="hhs")],
+    [InlineKeyboardButton("semua data", callback_data="sd")],
+    [InlineKeyboardButton("berdasarkan rentang tanggal", callback_data="brt")],
 ]
-
 
 rv_header = {
     "ADD": "menambahkan hasil visit"

@@ -127,13 +127,15 @@ class DBHelper:
             cursor.execute(query)
         self.conn.commit()
 
-    def get_report_hist(self):
+    def get_report_hist(self, date_start=None, date_end=None):
         vh = self.VISIT_HIST
         query = "SELECT * FROM " + vh + " JOIN " + self.VISITOR + \
                 " ON {}.id_visitor = {}.id_visitor JOIN ".format(vh, self.VISITOR) + self.STATE + \
                 " ON {}.id_state = {}.id JOIN ".format(vh, self.STATE) + \
                 self.CATEGORY + " ON {}.id_category = {}.id JOIN ".format(vh, self.CATEGORY) + \
-                self.RESULT + " ON {}.id_result = {}.id".format(vh, self.RESULT)
+                self.RESULT + " ON {}.id_result = {}.id ".format(vh, self.RESULT)
+        if not (date_start is None) and not (date_end is None):
+            query += "WHERE {}.date_submit BETWEEN '{}' AND '{}'".format(self.VISIT_HIST, date_start, date_end)
         cursor = self.conn.cursor()
         cursor_ph = self.conn.cursor()
         cursor.execute(query)
@@ -159,8 +161,10 @@ class DBHelper:
             res_photos.append([ph[0] for ph in photos])
         return result, res_photos
 
-    def get_list_visitor(self):
+    def get_list_visitor(self, date_start=None, date_end=None):
         query = "SELECT id_visitor, name_visitor, username, total_submit, last_submit FROM " + self.VISITOR
+        if not (date_start is None) and not (date_end is None):
+            query += " WHERE last_submit BETWEEN '{}' AND '{}'".format(date_start, date_end)
         cursor = self.conn.cursor()
         cursor.execute(query)
         return cursor.fetchall()

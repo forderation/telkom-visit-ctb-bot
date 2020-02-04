@@ -10,21 +10,23 @@ from config import num_keyboard, sv_header, cr_header, rv_header
 from database import DBHelper
 from session_chat import Session
 from datetime import datetime
+import telegram_utils
 
 # command list
 # input_visit - memulai sesi input data visit
 # submit_visit - submit data visit ke bot
+# code_csv - mengunduh list kode visit (file csv)
+# report_code - melihat list kode visit
 # help - lihat contoh penggunaan bot
 # cancel - membatalkan sesi input visit
-# code_ct - daftar kode untuk status contacted
-# code_nct - daftar kode untuk status not contacted
-# get_csv - mendapatkan laporan visit dalam bentuk csv
+# start_adm1n - masuk ke dalam sesi admin
+# start - mulai chat bot
 # case conversation handler admin
 
 PASSWD_ADMIN, EDIT_RV_ADMIN, ADD_RV, UDPATE_NAME_RV, UPDATE_CODE_RV, REMOVE_RV, RENAME_RV, RECODE_RV, \
-    CATEGORY_RESULT_ADMIN, VISIT_RESULT_ADMIN, MENU_ADMIN, PIN_CHANGE, NEW_PIN, LAPORAN_ADMIN, \
-    EDIT_CR_ADMIN, VISIT_MENU_ADMIN, ADD_CR, RENAME_CR, RECODE_CR, REMOVE_CR, ADD_SV, RENAME_SV, RECODE_SV, \
-    REMOVE_SV, EDIT_SV_ADMIN = range(1, 26)
+CATEGORY_RESULT_ADMIN, VISIT_RESULT_ADMIN, MENU_ADMIN, PIN_CHANGE, NEW_PIN, LAPORAN_ADMIN, \
+EDIT_CR_ADMIN, VISIT_MENU_ADMIN, ADD_CR, RENAME_CR, RECODE_CR, REMOVE_CR, ADD_SV, RENAME_SV, RECODE_SV, \
+REMOVE_SV, EDIT_SV_ADMIN, DATE_LAST, DATE_SELECTED, ADMIN_CHOOSE_OPSI = range(1, 29)
 
 db = DBHelper()
 session = Session()
@@ -43,6 +45,9 @@ code_msg_id = 0
 code_chat_id = 0
 entry_msg_id = 0
 entry_chat_id = 0
+lpr_date_start = ""
+lpr_date_end = ""
+download_option = ""
 
 
 def pin_handler(update, context):
@@ -273,8 +278,8 @@ def save_photo_local(context, user_id):
         context.bot.get_file(photo_id).download(user_path + "/" + photo_id + ".jpg")
 
 
-def get_report_hist(update, context):
-    visits, photos = db.get_report_hist()
+def get_report_hist(update, context, ds=None, de=None):
+    visits, photos = db.get_report_hist(ds, de)
     df = pd.DataFrame(
         visits,
         columns=["tanggal visit", "nomor internet pelanggan", "kode visit", "keterangan lain-lain", "nama visitor",
@@ -291,8 +296,60 @@ def get_report_hist(update, context):
     )
 
 
-def get_list_visitor(update, context):
-    visitors = db.get_list_visitor()
+def date_start_handler(update, context):
+    context.bot.edit_message_text(
+        chat_id=admin_chat_id,
+        message_id=admin_msg_id,
+        text="masukkan tanggal awal",
+        reply_markup=telegram_utils.create_calendar()
+    )
+
+
+def date_end_callback(update, context):
+    selected, cancel, date = telegram_utils.process_calendar_selection(update, context)
+    if cancel:
+        context.bot.edit_message_text(
+            chat_id=admin_chat_id,
+            message_id=admin_msg_id,
+            text="seleksi tanggal laporan dibatalkan"
+        )
+        admin_laporan_handler(update, context)
+        return LAPORAN_ADMIN
+    if selected:
+        global lpr_date_start
+        lpr_date_start = str(date)
+        context.bot.edit_message_text(
+            chat_id=admin_chat_id,
+            message_id=admin_msg_id,
+            text="masukkan tanggal akhir",
+            reply_markup=telegram_utils.create_calendar()
+        )
+        return DATE_SELECTED
+
+
+def date_selected_callback(update, context):
+    selected, cancel, date = telegram_utils.process_calendar_selection(update, context)
+    if cancel:
+        context.bot.edit_message_text(
+            chat_id=admin_chat_id,
+            message_id=admin_msg_id,
+            text="seleksi tanggal laporan dibatalkan"
+        )
+        admin_laporan_handler(update, context)
+        return LAPORAN_ADMIN
+    if selected:
+        global lpr_date_start
+        global download_option
+        if download_option == "riwayat":
+            get_report_hist(update, context, lpr_date_start, date)
+        if download_option == "visitor":
+            get_list_visitor(update, context, lpr_date_start, date)
+        admin_laporan_handler(update, context)
+        return LAPORAN_ADMIN
+
+
+def get_list_visitor(update, context, ds=None, de=None):
+    visitors = db.get_list_visitor(ds, de)
     df = pd.DataFrame(
         visitors,
         columns=["id visitor", "nama visitor", "username", "total submit", "terakhir submit"]
@@ -354,16 +411,20 @@ def admin_main_menu_callback(update, context):
         pin_admin = ""
         return PIN_CHANGE
     if data == "laporan":
-        context.bot.edit_message_text(
-            chat_id=admin_chat_id,
-            message_id=admin_msg_id,
-            text="menu laporan : ",
-            reply_markup=InlineKeyboardMarkup(config.admin_laporan_menu)
-        )
+        admin_laporan_handler(update, context)
         return LAPORAN_ADMIN
     if data == "pv":
         admin_vm_handler(update, context)
         return VISIT_MENU_ADMIN
+
+
+def admin_laporan_handler(update, context):
+    context.bot.edit_message_text(
+        chat_id=admin_chat_id,
+        message_id=admin_msg_id,
+        text="menu laporan : ",
+        reply_markup=InlineKeyboardMarkup(config.admin_laporan_menu)
+    )
 
 
 def admin_change_pin(update, context):
@@ -430,10 +491,15 @@ def admin_new_pin(update, context):
 
 def admin_laporan_callback(update, context):
     data = update.callback_query.data
+    global download_option
     if data == "lv":
-        get_list_visitor(update, context)
+        download_option = "visitor"
+        admin_choose_opsi_handler(update, context)
+        return ADMIN_CHOOSE_OPSI
     if data == "rws":
-        get_report_hist(update, context)
+        download_option = "riwayat"
+        admin_choose_opsi_handler(update, context)
+        return ADMIN_CHOOSE_OPSI
     if data == "kmu":
         admin_menu_handler(update, context)
         return MENU_ADMIN
@@ -857,6 +923,15 @@ def admin_remove_sv_callback(update, context):
     return REMOVE_SV
 
 
+def admin_choose_opsi_handler(update, context):
+    context.bot.edit_message_text(
+        chat_id=admin_chat_id,
+        message_id=admin_msg_id,
+        text="pilih opsi pengunduhan",
+        reply_markup=InlineKeyboardMarkup(config.date_choose)
+    )
+
+
 def code_csv(update, context):
     all_code = db.get_all_code()
     df = pd.DataFrame(
@@ -873,6 +948,24 @@ def code_csv(update, context):
         document=open("code list.xlsx", 'rb'),
         filename="list kode.xlsx"
     )
+
+
+def admin_choose_opsi_callback(update, context):
+    data = update.callback_query.data
+    global download_option
+    if data == "kmu":
+        admin_menu_handler(update, context)
+        return MENU_ADMIN
+    if data == "sd":
+        if download_option == "riwayat":
+            get_report_hist(update, context)
+        elif download_option == "visitor":
+            get_list_visitor(update, context)
+        admin_laporan_handler(update, context)
+        return LAPORAN_ADMIN
+    if data == "brt":
+        date_start_handler(update, context)
+        return DATE_LAST
 
 
 if __name__ == "__main__":
@@ -893,11 +986,14 @@ if __name__ == "__main__":
                 PIN_CHANGE: [CallbackQueryHandler(admin_change_pin)],
                 NEW_PIN: [CallbackQueryHandler(admin_new_pin)],
                 LAPORAN_ADMIN: [CallbackQueryHandler(admin_laporan_callback)],
+                DATE_LAST: [CallbackQueryHandler(date_end_callback)],
+                DATE_SELECTED: [CallbackQueryHandler(date_selected_callback)],
                 VISIT_MENU_ADMIN: [CallbackQueryHandler(admin_vm_callback)],
                 VISIT_RESULT_ADMIN: [CallbackQueryHandler(admin_choose_rv_callback)],
                 CATEGORY_RESULT_ADMIN: [CallbackQueryHandler(admin_choose_cr_callback)],
                 EDIT_RV_ADMIN: [CallbackQueryHandler(admin_edit_rv_callback)],
                 EDIT_CR_ADMIN: [CallbackQueryHandler(admin_edit_cr_callback)],
+                ADMIN_CHOOSE_OPSI: [CallbackQueryHandler(admin_choose_opsi_callback)],
                 ADD_RV: [
                     CallbackQueryHandler(admin_back_menu_callback),
                     MessageHandler(Filters.text, admin_add_rv_callback)
@@ -930,7 +1026,7 @@ if __name__ == "__main__":
                     CallbackQueryHandler(admin_back_menu_callback),
                     MessageHandler(Filters.regex(r'\d+$'), admin_remove_cr_callback)
                 ],
-                EDIT_SV_ADMIN: [admin_edit_sv_callback],
+                EDIT_SV_ADMIN: [CallbackQueryHandler(admin_edit_sv_callback)],
                 ADD_SV: [
                     CallbackQueryHandler(admin_back_menu_callback),
                     MessageHandler(Filters.text, admin_add_sv_callback)
@@ -951,7 +1047,6 @@ if __name__ == "__main__":
         )
         up.dispatcher.add_handler(conv)
         up.dispatcher.add_error_handler(fallback_handler)
-        up.dispatcher.add_handler(CommandHandler('start', start_handler))
         up.dispatcher.add_handler(CommandHandler('start', start_handler))
         up.dispatcher.add_handler(CommandHandler('help', start_handler))
         up.dispatcher.add_handler(MessageHandler(Filters.photo, photo_visit_callback))
