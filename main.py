@@ -1,6 +1,6 @@
 import logging
 import os
-
+import re
 import pandas as pd
 from telegram import InlineKeyboardMarkup, InlineKeyboardButton, ParseMode
 from telegram.ext import Updater, CommandHandler, Filters, MessageHandler, ConversationHandler, CallbackQueryHandler
@@ -259,7 +259,7 @@ def submit_visit(update, context):
         context.bot.get_file(photo_id).download(photo_path)
         photo_paths.append(photo_path)
     # add user to total submit if exist else create new user data
-    db.sync_user_input(user_id, fullname(update), username)
+    db.increment_submit(user_id, fullname(update), username)
     id_visit = db.add_visit(user_id, session.get_session(user_id))
     db.add_photo(user_id, id_visit, photo_paths)
     session.remove_user(user_id)
@@ -461,6 +461,20 @@ def admin_change_pin(update, context):
         text=msg_bot,
         reply_markup=InlineKeyboardMarkup(num_keyboard)
     )
+
+#
+# def todo_submit(update, context):
+#     todolist = update.message.text.replace("/todo_list", "").strip().split("\n")
+#     username = update.message.from_user.username
+#     todo_list_validated = []
+#     for todo in todolist:
+#         if re.search('[A-Za-z,./?\';[\\]!@#$%^&*()<>:"{}]+', todo):
+#             context.bot.send_message(
+#                 chat_id=update.effective_chat.id,
+#                 text="@{} input harus berupa angka".format(username)
+#             )
+#         else:
+#             todo_list_validated.append(todo.strip())
 
 
 def admin_new_pin(update, context):
@@ -1052,6 +1066,7 @@ if __name__ == "__main__":
         up.dispatcher.add_handler(MessageHandler(Filters.photo, photo_visit_callback))
         up.dispatcher.add_handler(CommandHandler('cancel', cancel_callback))
         up.dispatcher.add_handler(CommandHandler('input_visit', input_visit_callback))
+        # up.dispatcher.add_handler(CommandHandler('todo_list', todo_submit))
         up.dispatcher.add_handler(CommandHandler('submit_visit', submit_visit))
         up.dispatcher.add_handler(CommandHandler('report_code', report_code))
         up.dispatcher.add_handler(CommandHandler('code_csv', code_csv))

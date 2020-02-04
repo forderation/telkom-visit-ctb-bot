@@ -116,15 +116,19 @@ class DBHelper:
         if not cursor.fetchall():
             query = "INSERT INTO " + self.VISITOR + \
                     " (id_visitor, name_visitor, username, total_submit, last_submit) " + \
-                    "VALUES (?,?,?,1,(SELECT datetime('now','localtime')))"
+                    "VALUES (?,?,?,0,(SELECT datetime('now','localtime')))"
             cursor.execute(query, (user_id, fullname, username))
-        else:
-            query = "UPDATE " + self.VISITOR + \
-                    " SET name_visitor = '" + fullname + "', username = '" + username + \
-                    "', total_submit = " \
-                    "total_submit+1, last_submit " \
-                    "= (SELECT datetime('now','localtime')) WHERE id_visitor = {}".format(user_id)
-            cursor.execute(query)
+            self.conn.commit()
+
+    def increment_submit(self, user_id, fullname, username):
+        cursor = self.conn.cursor()
+        self.sync_user_input(user_id, fullname, username)
+        query = "UPDATE " + self.VISITOR + \
+                " SET name_visitor = '" + fullname + "', username = '" + username + \
+                "', total_submit = " \
+                "total_submit+1, last_submit " \
+                "= (SELECT datetime('now','localtime')) WHERE id_visitor = {}".format(user_id)
+        cursor.execute(query)
         self.conn.commit()
 
     def get_report_hist(self, date_start=None, date_end=None):
@@ -322,3 +326,10 @@ db = DBHelper()
 # print(db.check_exist_code_rv(1, 12))
 # db.add_result_vist(1)
 # print(db.get_report_hist())
+#
+# import os
+# curdir = os.getcwd()
+# for file in os.listdir(curdir + "/res/img"):
+#     print(file)
+#     if file.endswith(".jpg"):
+#         print(os.path.join("/res", file))
