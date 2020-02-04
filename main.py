@@ -24,9 +24,9 @@ import telegram_utils
 # case conversation handler admin
 
 PASSWD_ADMIN, EDIT_RV_ADMIN, ADD_RV, UDPATE_NAME_RV, UPDATE_CODE_RV, REMOVE_RV, RENAME_RV, RECODE_RV, \
-CATEGORY_RESULT_ADMIN, VISIT_RESULT_ADMIN, MENU_ADMIN, PIN_CHANGE, NEW_PIN, LAPORAN_ADMIN, \
-EDIT_CR_ADMIN, VISIT_MENU_ADMIN, ADD_CR, RENAME_CR, RECODE_CR, REMOVE_CR, ADD_SV, RENAME_SV, RECODE_SV, \
-REMOVE_SV, EDIT_SV_ADMIN, DATE_LAST, DATE_SELECTED, ADMIN_CHOOSE_OPSI = range(1, 29)
+    CATEGORY_RESULT_ADMIN, VISIT_RESULT_ADMIN, MENU_ADMIN, PIN_CHANGE, NEW_PIN, LAPORAN_ADMIN, \
+    EDIT_CR_ADMIN, VISIT_MENU_ADMIN, ADD_CR, RENAME_CR, RECODE_CR, REMOVE_CR, ADD_SV, RENAME_SV, RECODE_SV, \
+    REMOVE_SV, EDIT_SV_ADMIN, DATE_LAST, DATE_SELECTED, ADMIN_CHOOSE_OPSI = range(1, 29)
 
 db = DBHelper()
 session = Session()
@@ -260,8 +260,8 @@ def submit_visit(update, context):
         photo_paths.append(photo_path)
     # add user to total submit if exist else create new user data
     db.increment_submit(user_id, fullname(update), username)
-    id_visit = db.add_visit(user_id, session.get_session(user_id))
-    db.add_photo(user_id, id_visit, photo_paths)
+    id_visit = db.insert_visit(user_id, session.get_session(user_id))
+    db.insert_photo(user_id, id_visit, photo_paths)
     session.remove_user(user_id)
     context.bot.send_message(
         chat_id=update.effective_chat.id,
@@ -462,19 +462,26 @@ def admin_change_pin(update, context):
         reply_markup=InlineKeyboardMarkup(num_keyboard)
     )
 
-#
-# def todo_submit(update, context):
-#     todolist = update.message.text.replace("/todo_list", "").strip().split("\n")
-#     username = update.message.from_user.username
-#     todo_list_validated = []
-#     for todo in todolist:
-#         if re.search('[A-Za-z,./?\';[\\]!@#$%^&*()<>:"{}]+', todo):
-#             context.bot.send_message(
-#                 chat_id=update.effective_chat.id,
-#                 text="@{} input harus berupa angka".format(username)
-#             )
-#         else:
-#             todo_list_validated.append(todo.strip())
+
+def todo_submit(update, context):
+    todolist = update.message.text.replace("/todo_list", "").strip().split("\n")
+    username = update.message.from_user.username
+    user_id = str(update.message.from_user.id)
+    todo_list_validated = []
+    for todo in todolist:
+        if re.search('[A-Za-z,./?\';[\\]!@#$%^&*()<>:"{}]+', todo):
+            context.bot.send_message(
+                chat_id=update.effective_chat.id,
+                text="@{} input harus berupa angka".format(username)
+            )
+            return
+        else:
+            todo_list_validated.append(todo.strip())
+    db.insert_todo_list(todo_list_validated, user_id, fullname(update), username)
+    context.bot.send_message(
+        chat_id=update.effective_chat.id,
+        text="@{} input todo list diterima".format(username)
+    )
 
 
 def admin_new_pin(update, context):
@@ -1066,7 +1073,7 @@ if __name__ == "__main__":
         up.dispatcher.add_handler(MessageHandler(Filters.photo, photo_visit_callback))
         up.dispatcher.add_handler(CommandHandler('cancel', cancel_callback))
         up.dispatcher.add_handler(CommandHandler('input_visit', input_visit_callback))
-        # up.dispatcher.add_handler(CommandHandler('todo_list', todo_submit))
+        up.dispatcher.add_handler(CommandHandler('todo_list', todo_submit))
         up.dispatcher.add_handler(CommandHandler('submit_visit', submit_visit))
         up.dispatcher.add_handler(CommandHandler('report_code', report_code))
         up.dispatcher.add_handler(CommandHandler('code_csv', code_csv))

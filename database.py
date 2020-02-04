@@ -15,6 +15,8 @@ class DBHelper:
         self.STATE = "STATE_VISIT"
         self.RESULT = "VISIT_RESULT"
         self.VISITOR = "VISITOR"
+        self.TODO_LIST = "TODO_LIST"
+        self.VISITOR_TODO = "VISITOR_TODO"
 
     def setup(self):
         self.conn.executescript(ddl)
@@ -46,22 +48,52 @@ class DBHelper:
             self.conn.commit()
             return True
 
-    def add_visit(self, user_id, user_session):
+    def insert_visit(self, user_id, user_session):
         cursor = self.conn.cursor()
+        nip = user_session["nip"]
+        query = "SELECT * FROM " + self.VISITOR_TODO + " WHERE id_visitor = '{}' ".format(user_id) + \
+                "AND date=(SELECT DATE('now','localtime'))"
+        cursor.execute(query)
+        if len(cursor.fetchall()) == 0:
+            query = "INSERT INTO " + self.VISITOR_TODO + \
+                    " (id_visitor, date, time) VALUES ('{}',(SELECT DATE('now','localtime')),".format(user_id) + \
+                    "(SELECT TIME('now','localtime')))"
+            cursor.execute(query)
+            self.conn.commit()
+        query = "SELECT nip FROM " + self.TODO_LIST + " WHERE id_visitor = '{}' ".format(user_id) + \
+                "AND is_submit = 0 AND nip = '{}'".format(nip)
+        cursor.execute(query)
+        if len(cursor.fetchall()) != 0:
+            update = "UPDATE " + self.VISITOR_TODO + " SET todo_submit = todo_submit + 1, time = " + \
+                     "(SELECT TIME('now', 'localtime')) WHERE DATE = (SELECT DATE('now','localtime'))" + \
+                     " AND id_visitor = '{}'".format(user_id)
+            cursor.execute(update)
+            self.conn.commit()
+            update_todo = "UPDATE " + self.TODO_LIST + " SET is_submit = 1 WHERE DATE = " + \
+                          "(SELECT DATE('now','localtime')) AND nip = '{}' ".format(nip) + \
+                          "AND id_visitor = '{}'".format(user_id)
+            cursor.execute(update_todo)
+            self.conn.commit()
+        else:
+            update = "UPDATE " + self.VISITOR_TODO + " SET outer_submit = outer_submit + 1, time = " + \
+                     "(SELECT TIME('now', 'localtime')) WHERE DATE = (SELECT DATE('now','localtime'))" + \
+                     " AND id_visitor = '{}'".format(user_id)
+            cursor.execute(update)
+            self.conn.commit()
         query = "INSERT INTO " + \
                 self.VISIT_HIST + \
                 " (date_submit, nip, other_desc, id_state, id_category, id_result, id_visitor)" + \
                 "VALUES ((SELECT datetime('now','localtime')),?,?,?,?,?,?)"
         state, category, result = user_session["idx_visit_code"]
         args = (
-            user_session["nip"], user_session["other_desc"], state, category, result, user_id
+            nip, user_session["other_desc"], state, category, result, user_id
         )
         cursor.execute(query, args)
         id_visit = cursor.lastrowid
         self.conn.commit()
         return id_visit
 
-    def add_photo(self, user_id, id_visit, photo_paths):
+    def insert_photo(self, user_id, id_visit, photo_paths):
         cursor = self.conn.cursor()
         for photo_path in photo_paths:
             query = "INSERT INTO " + self.PHOTO + \
@@ -314,6 +346,15 @@ class DBHelper:
         cursor = self.conn.cursor()
         query = "DELETE FROM " + self.STATE + " WHERE id = " + id_
         cursor.execute(query)
+        self.conn.commit()
+
+    def insert_todo_list(self, list_todo, user_id, fullname, username):
+        cursor = self.conn.cursor()
+        self.sync_user_input(user_id, fullname, username)
+        for nip in list_todo:
+            query = "INSERT INTO " + self.TODO_LIST + " (nip, date, id_visitor) " + \
+                    "VALUES (?,(SELECT DATE('now','localtime')),?)"
+            cursor.execute(query, (nip, user_id))
         self.conn.commit()
 
 
