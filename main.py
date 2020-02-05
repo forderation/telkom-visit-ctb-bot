@@ -24,9 +24,9 @@ import telegram_utils
 # case conversation handler admin
 
 PASSWD_ADMIN, EDIT_RV_ADMIN, ADD_RV, UDPATE_NAME_RV, UPDATE_CODE_RV, REMOVE_RV, RENAME_RV, RECODE_RV, \
-    CATEGORY_RESULT_ADMIN, VISIT_RESULT_ADMIN, MENU_ADMIN, PIN_CHANGE, NEW_PIN, LAPORAN_ADMIN, \
-    EDIT_CR_ADMIN, VISIT_MENU_ADMIN, ADD_CR, RENAME_CR, RECODE_CR, REMOVE_CR, ADD_SV, RENAME_SV, RECODE_SV, \
-    REMOVE_SV, EDIT_SV_ADMIN, DATE_LAST, DATE_SELECTED, ADMIN_CHOOSE_OPSI = range(1, 29)
+CATEGORY_RESULT_ADMIN, VISIT_RESULT_ADMIN, MENU_ADMIN, PIN_CHANGE, NEW_PIN, LAPORAN_ADMIN, \
+EDIT_CR_ADMIN, VISIT_MENU_ADMIN, ADD_CR, RENAME_CR, RECODE_CR, REMOVE_CR, ADD_SV, RENAME_SV, RECODE_SV, \
+REMOVE_SV, EDIT_SV_ADMIN, DATE_LAST, DATE_SELECTED, ADMIN_CHOOSE_OPSI = range(1, 29)
 
 db = DBHelper()
 session = Session()
@@ -48,6 +48,9 @@ entry_chat_id = 0
 lpr_date_start = ""
 lpr_date_end = ""
 download_option = ""
+RIWAYAT_OPT = "LAPORAN_RIWAYAT_SUBMIT_OPT"
+VISITOR_OPT = "LIST_VISITOR_OPT"
+LVS_OPT = "LAPORAN_VISITOR_SUBMIT_OPT"
 
 
 def pin_handler(update, context):
@@ -340,12 +343,31 @@ def date_selected_callback(update, context):
     if selected:
         global lpr_date_start
         global download_option
-        if download_option == "riwayat":
+        if download_option == RIWAYAT_OPT:
             get_report_hist(update, context, lpr_date_start, date)
-        if download_option == "visitor":
+        if download_option == VISITOR_OPT:
             get_list_visitor(update, context, lpr_date_start, date)
+        if download_option == LVS_OPT:
+            get_report_todo(update, context, lpr_date_start, date)
         admin_laporan_handler(update, context)
         return LAPORAN_ADMIN
+
+
+def get_report_todo(update, context, ds, de):
+    report_todo = db.get_report_todo(ds, de)
+    df = pd.DataFrame(
+        report_todo,
+        columns=["id", "nama visitor", "tanggal tugas", "terakhir submit", "tugas selesai", "tugas belum selesai",
+                 "diluar tugas"]
+    )
+    df["jumlah tugas"] = df["tugas selesai"] + df["tugas belum selesai"]
+    df["jumlah keseluruhan"] = df["jumlah tugas"] + df["diluar tugas"]
+    df.to_excel("todo_report.xlsx", index=False)
+    context.bot.send_document(
+        chat_id=update.effective_chat.id,
+        document=open("todo_report.xlsx", 'rb'),
+        filename="laporan penugasan.xlsx"
+    )
 
 
 def get_list_visitor(update, context, ds=None, de=None):
@@ -514,13 +536,17 @@ def admin_laporan_callback(update, context):
     data = update.callback_query.data
     global download_option
     if data == "lv":
-        download_option = "visitor"
+        download_option = VISITOR_OPT
         admin_choose_opsi_handler(update, context)
         return ADMIN_CHOOSE_OPSI
     if data == "rws":
-        download_option = "riwayat"
+        download_option = RIWAYAT_OPT
         admin_choose_opsi_handler(update, context)
         return ADMIN_CHOOSE_OPSI
+    if data == "lvs":
+        download_option = LVS_OPT
+        date_start_handler(update, context)
+        return DATE_LAST
     if data == "kmu":
         admin_menu_handler(update, context)
         return MENU_ADMIN
@@ -978,9 +1004,9 @@ def admin_choose_opsi_callback(update, context):
         admin_menu_handler(update, context)
         return MENU_ADMIN
     if data == "sd":
-        if download_option == "riwayat":
+        if download_option == RIWAYAT_OPT:
             get_report_hist(update, context)
-        elif download_option == "visitor":
+        elif download_option == VISITOR_OPT:
             get_list_visitor(update, context)
         admin_laporan_handler(update, context)
         return LAPORAN_ADMIN

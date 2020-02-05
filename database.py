@@ -56,7 +56,7 @@ class DBHelper:
         cursor.execute(query)
         if len(cursor.fetchall()) == 0:
             query = "INSERT INTO " + self.VISITOR_TODO + \
-                    " (id_visitor, date, time) VALUES ('{}',(SELECT DATE('now','localtime')),".format(user_id) + \
+                    " (id_visitor, date, last_submit) VALUES ('{}',(SELECT DATE('now','localtime')),".format(user_id) + \
                     "(SELECT TIME('now','localtime')))"
             cursor.execute(query)
             self.conn.commit()
@@ -64,7 +64,7 @@ class DBHelper:
                 "AND is_submit = 0 AND nip = '{}'".format(nip)
         cursor.execute(query)
         if len(cursor.fetchall()) != 0:
-            update = "UPDATE " + self.VISITOR_TODO + " SET todo_done = todo_done + 1, time = " + \
+            update = "UPDATE " + self.VISITOR_TODO + " SET todo_done = todo_done + 1, last_submit = " + \
                      "(SELECT TIME('now', 'localtime')) WHERE DATE = (SELECT DATE('now','localtime'))" + \
                      " AND id_visitor = '{}'".format(user_id)
             print(update)
@@ -88,7 +88,7 @@ class DBHelper:
             cursor.execute(update)
             self.conn.commit()
         else:
-            update = "UPDATE " + self.VISITOR_TODO + " SET outer_submit = outer_submit + 1, time = " + \
+            update = "UPDATE " + self.VISITOR_TODO + " SET outer_submit = outer_submit + 1, last_submit = " + \
                      "(SELECT TIME('now', 'localtime')) WHERE DATE = (SELECT DATE('now','localtime'))" + \
                      " AND id_visitor = '{}'".format(user_id)
             cursor.execute(update)
@@ -370,7 +370,20 @@ class DBHelper:
             cursor.execute(query, (nip, user_id))
         self.conn.commit()
 
+    def get_report_todo(self, date_start, date_end):
+        cursor = self.conn.cursor()
+        query = "SELECT {}.id_visitor, {}.name_visitor, date, {}.last_submit, ".format(self.VISITOR, self.VISITOR,
+                                                                                       self.VISITOR_TODO) + \
+                "todo_done, todo_wait, outer_submit FROM {} JOIN {} ON ".format(self.VISITOR_TODO, self.VISITOR) + \
+                "{}.id_visitor = {}.id_visitor ".format(self.VISITOR_TODO, self.VISITOR) + \
+                "WHERE date BETWEEN '{}' AND '{}'".format(date_start, date_end)
+        print(query)
+        cursor.execute(query)
+        return cursor.fetchall()
+
+
 db = DBHelper()
+db.get_report_todo('2020-02-01', '2020-02-30')
 # print(db.get_list_visitor())
 # db.seeder_admin(1)
 # id_, name = zip(*db.get_category_visit())

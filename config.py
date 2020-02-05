@@ -48,6 +48,7 @@ admin_laporan_menu = [
     [InlineKeyboardButton("kembali ke menu utama " + arrow_up, callback_data="kmu")],
     [InlineKeyboardButton("list visitor", callback_data="lv")],
     [InlineKeyboardButton("laporan riwayat submit", callback_data="rws")],
+    [InlineKeyboardButton("laporan penugasan", callback_data="lvs")]
 ]
 
 admin_kv_menu = [
