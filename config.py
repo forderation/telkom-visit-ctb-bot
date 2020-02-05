@@ -47,6 +47,7 @@ admin_main_menu = [
 admin_laporan_menu = [
     [InlineKeyboardButton("kembali ke menu utama " + arrow_up, callback_data="kmu")],
     [InlineKeyboardButton("list visitor", callback_data="lv")],
+    [InlineKeyboardButton("foto bukti visit", callback_data="fbv")],
     [InlineKeyboardButton("laporan riwayat submit", callback_data="rws")],
     [InlineKeyboardButton("laporan penugasan", callback_data="lvs")]
 ]
@@ -78,6 +79,14 @@ admin_category_menu = [
     [InlineKeyboardButton("perbarui nama kategori visit " + pen, callback_data="pnks")],
     [InlineKeyboardButton("perbarui kode kategori visit " + code, callback_data="pkks")],
     [InlineKeyboardButton("hapus kategori visit " + remove, callback_data="hks")],
+]
+
+admin_result_menu = [
+    [InlineKeyboardButton("kembali ke menu utama " + arrow_up, callback_data="kmu")],
+    [InlineKeyboardButton("tambah hasil visit " + plus, callback_data="ths")],
+    [InlineKeyboardButton("perbarui nama hasil visit " + pen, callback_data="pnhs")],
+    [InlineKeyboardButton("perbarui kode hasil visit " + code, callback_data="pkhs")],
+    [InlineKeyboardButton("hapus hasil visit " + remove, callback_data="hhs")],
 ]
 
 date_choose = [

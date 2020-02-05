@@ -2,7 +2,7 @@ import logging
 import os
 import re
 import pandas as pd
-from telegram import InlineKeyboardMarkup, InlineKeyboardButton, ParseMode
+from telegram import InlineKeyboardMarkup, InlineKeyboardButton, ParseMode, InputMediaPhoto, ChatAction
 from telegram.ext import Updater, CommandHandler, Filters, MessageHandler, ConversationHandler, CallbackQueryHandler
 import config
 import token_telegram as tk
@@ -26,7 +26,7 @@ import telegram_utils
 PASSWD_ADMIN, EDIT_RV_ADMIN, ADD_RV, UDPATE_NAME_RV, UPDATE_CODE_RV, REMOVE_RV, RENAME_RV, RECODE_RV, \
 CATEGORY_RESULT_ADMIN, VISIT_RESULT_ADMIN, MENU_ADMIN, PIN_CHANGE, NEW_PIN, LAPORAN_ADMIN, \
 EDIT_CR_ADMIN, VISIT_MENU_ADMIN, ADD_CR, RENAME_CR, RECODE_CR, REMOVE_CR, ADD_SV, RENAME_SV, RECODE_SV, \
-REMOVE_SV, EDIT_SV_ADMIN, DATE_LAST, DATE_SELECTED, ADMIN_CHOOSE_OPSI = range(1, 29)
+REMOVE_SV, EDIT_SV_ADMIN, DATE_LAST, DATE_SELECTED, ADMIN_CHOOSE_OPSI, INPUT_USERID = range(1, 30)
 
 db = DBHelper()
 session = Session()
@@ -47,10 +47,13 @@ entry_msg_id = 0
 entry_chat_id = 0
 lpr_date_start = ""
 lpr_date_end = ""
+lpr_date_photo = ""
 download_option = ""
 RIWAYAT_OPT = "LAPORAN_RIWAYAT_SUBMIT_OPT"
 VISITOR_OPT = "LIST_VISITOR_OPT"
 LVS_OPT = "LAPORAN_VISITOR_SUBMIT_OPT"
+VS_PHOTO_OPT = "VISITOR_PHOTO_OPT"
+admin_session = False
 
 
 def pin_handler(update, context):
@@ -307,7 +310,6 @@ def date_start_handler(update, context):
         reply_markup=telegram_utils.create_calendar()
     )
 
-
 def date_end_callback(update, context):
     selected, cancel, date = telegram_utils.process_calendar_selection(update, context)
     if cancel:
@@ -321,13 +323,46 @@ def date_end_callback(update, context):
     if selected:
         global lpr_date_start
         lpr_date_start = str(date)
-        context.bot.edit_message_text(
-            chat_id=admin_chat_id,
-            message_id=admin_msg_id,
-            text="masukkan tanggal akhir",
-            reply_markup=telegram_utils.create_calendar()
-        )
-        return DATE_SELECTED
+        if download_option == VS_PHOTO_OPT:
+            context.bot.edit_message_text(
+                chat_id=admin_chat_id,
+                message_id=admin_msg_id,
+                text="masukkan user id: "
+            )
+            return INPUT_USERID
+        else:
+            context.bot.edit_message_text(
+                chat_id=admin_chat_id,
+                message_id=admin_msg_id,
+                text="masukkan tanggal akhir",
+                reply_markup=telegram_utils.create_calendar()
+            )
+            return DATE_SELECTED
+
+
+def admin_userid_callback(update, context):
+    user_id = update.message.text
+    global lpr_date_start
+    date = lpr_date_start.split(" ")[0]
+    curdir = os.getcwd() + "/res/img/" + date + "/" + user_id + "/"
+    error = "foto pada tanggal {} atau user id {} tidak ditemukan".format(date, user_id)
+    if os.path.isdir(curdir):
+        for file in os.listdir(curdir):
+            if file.endswith(".jpg"):
+                photo_visit = os.path.join(curdir + "/" + file)
+                context.bot.send_chat_action(
+                    chat_id=update.effective_chat.id,
+                    action=ChatAction.TYPING
+                )
+                context.bot.send_photo(
+                    chat_id=update.effective_chat.id,
+                    photo=open(photo_visit, 'rb')
+                )
+        admin_laporan_handler(update, context, True)
+        return LAPORAN_ADMIN
+    else:
+        admin_menu_handler(update, context, error, True)
+        return MENU_ADMIN
 
 
 def date_selected_callback(update, context):
@@ -402,16 +437,30 @@ def admin_start(update, context):
     return PASSWD_ADMIN
 
 
-def admin_menu_handler(update, context, add_msg=""):
+def admin_menu_handler(update, context, add_msg="", is_reset=False):
     msg_send = "menu utama admin"
     if len(add_msg) != 0:
         msg_send += "\n*notifikasi: {}*".format(add_msg)
-    context.bot.edit_message_text(
-        chat_id=admin_chat_id,
-        message_id=admin_msg_id,
-        text=msg_send,
-        reply_markup=InlineKeyboardMarkup(config.admin_main_menu)
-    )
+    markup = InlineKeyboardMarkup(config.admin_main_menu)
+    parsing = ParseMode.MARKDOWN
+    global admin_chat_id, admin_msg_id
+    if is_reset:
+        message = context.bot.send_message(
+            chat_id=update.effective_chat.id,
+            text=msg_send,
+            reply_markup=markup,
+            parse_mode=parsing
+        )
+        admin_chat_id = message.chat_id
+        admin_msg_id = message.message_id
+    else:
+        context.bot.edit_message_text(
+            chat_id=admin_chat_id,
+            message_id=admin_msg_id,
+            text=msg_send,
+            reply_markup=InlineKeyboardMarkup(config.admin_main_menu),
+            parse_mode=parsing
+        )
 
 
 def admin_main_menu_callback(update, context):
@@ -440,13 +489,25 @@ def admin_main_menu_callback(update, context):
         return VISIT_MENU_ADMIN
 
 
-def admin_laporan_handler(update, context):
-    context.bot.edit_message_text(
-        chat_id=admin_chat_id,
-        message_id=admin_msg_id,
-        text="menu laporan : ",
-        reply_markup=InlineKeyboardMarkup(config.admin_laporan_menu)
-    )
+def admin_laporan_handler(update, context, is_reset=False):
+    markup = InlineKeyboardMarkup(config.admin_laporan_menu)
+    msg = "menu laporan : "
+    global admin_chat_id, admin_msg_id
+    if is_reset:
+        message = context.bot.send_message(
+            chat_id=update.effective_chat.id,
+            text=msg,
+            reply_markup=markup
+        )
+        admin_chat_id = message.chat_id
+        admin_msg_id = message.message_id
+    else:
+        context.bot.edit_message_text(
+            chat_id=admin_chat_id,
+            message_id=admin_msg_id,
+            text=msg,
+            reply_markup=markup
+        )
 
 
 def admin_change_pin(update, context):
@@ -546,6 +607,10 @@ def admin_laporan_callback(update, context):
     if data == "lvs":
         download_option = LVS_OPT
         date_start_handler(update, context)
+        return DATE_LAST
+    if data == "fbv":
+        date_start_handler(update, context)
+        download_option = VS_PHOTO_OPT
         return DATE_LAST
     if data == "kmu":
         admin_menu_handler(update, context)
@@ -667,6 +732,7 @@ def admin_choose_rv_callback(update, context):
     for _id, name, code in db.get_visit_result(category_id):
         msg += f"\n{_id} - {name} - {code}"
     global state_rv
+    state_rv = category_id
     state_rv = category_id
     context.bot.edit_message_text(
         chat_id=admin_chat_id,
@@ -1040,6 +1106,7 @@ if __name__ == "__main__":
                 CATEGORY_RESULT_ADMIN: [CallbackQueryHandler(admin_choose_cr_callback)],
                 EDIT_RV_ADMIN: [CallbackQueryHandler(admin_edit_rv_callback)],
                 EDIT_CR_ADMIN: [CallbackQueryHandler(admin_edit_cr_callback)],
+                INPUT_USERID: [MessageHandler(Filters.regex(r'\d+$'), admin_userid_callback)],
                 ADMIN_CHOOSE_OPSI: [CallbackQueryHandler(admin_choose_opsi_callback)],
                 ADD_RV: [
                     CallbackQueryHandler(admin_back_menu_callback),

@@ -383,7 +383,7 @@ class DBHelper:
 
 
 db = DBHelper()
-db.get_report_todo('2020-02-01', '2020-02-30')
+# db.get_report_todo('2020-02-01', '2020-02-30')
 # print(db.get_list_visitor())
 # db.seeder_admin(1)
 # id_, name = zip(*db.get_category_visit())
@@ -392,10 +392,11 @@ db.get_report_todo('2020-02-01', '2020-02-30')
 # print(db.check_exist_code_rv(1, 12))
 # db.add_result_vist(1)
 # print(db.get_report_hist())
-#
 # import os
-# curdir = os.getcwd()
-# for file in os.listdir(curdir + "/res/img"):
-#     print(file)
-#     if file.endswith(".jpg"):
-#         print(os.path.join("/res", file))
+# date = '2020-02-04'
+# curdir = os.getcwd() + "/res/img/" + date
+# for folder_user in os.listdir(curdir):
+#     for file in os.listdir(curdir + "/" + folder_user + "/"):
+#         if file.endswith(".jpg"):
+#             print(os.path.join(curdir + "/" + folder_user + "/" + file))
+
