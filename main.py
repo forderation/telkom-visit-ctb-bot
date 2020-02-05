@@ -16,7 +16,8 @@ import telegram_utils
 # input_visit - memulai sesi input data visit
 # submit_visit - submit data visit ke bot
 # code_csv - mengunduh list kode visit (file csv)
-# report_code - melihat list kode visit
+# todo_list - input list pelanggan yang akan divisit
+# help_todo_list - lihat cara penggunaan todo list
 # help - lihat contoh penggunaan bot
 # cancel - membatalkan sesi input visit
 # start_adm1n - masuk ke dalam sesi admin
@@ -53,7 +54,6 @@ RIWAYAT_OPT = "LAPORAN_RIWAYAT_SUBMIT_OPT"
 VISITOR_OPT = "LIST_VISITOR_OPT"
 LVS_OPT = "LAPORAN_VISITOR_SUBMIT_OPT"
 VS_PHOTO_OPT = "VISITOR_PHOTO_OPT"
-admin_session = False
 
 
 def pin_handler(update, context):
@@ -174,6 +174,21 @@ def start_handler(update, context):
     )
 
 
+def help_todo_list(update, context):
+    msg = "Silahkan input dalam bentuk format /todo_list list nomor internet pelanggan, pastikan dalam bentuk angka semua"
+    exam = """\nContoh: /todo_list 152504308719
+152504302224
+152504303748
+152504307600
+152504305667
+152504303067
+    """
+    context.bot.send_message(
+        chat_id=update.effective_chat.id,
+        text=msg + exam
+    )
+
+
 def photo_visit_callback(update, context):
     user_id = str(update.message.from_user.id)
     if session.is_user_active(user_id):
@@ -211,7 +226,7 @@ def input_visit_callback(update, context):
             option_code.append([f + m + r] + [[f, m, r]] + [[ids, idc, idr]] + [[state, category, result]])
         menu_code = [x[0] for x in option_code]
         if not (visit_code in menu_code):
-            msgerr = "kode visit tidak dikenali. silahkan lihat pada menu /report_code ,"
+            msgerr = "kode visit tidak dikenali. silahkan lihat pada menu /code_csv ,"
             msg_error(msgerr, update, context)
             return
         idx_code = menu_code.index(visit_code)
@@ -309,6 +324,7 @@ def date_start_handler(update, context):
         text="masukkan tanggal awal",
         reply_markup=telegram_utils.create_calendar()
     )
+
 
 def date_end_callback(update, context):
     selected, cancel, date = telegram_utils.process_calendar_selection(update, context)
@@ -551,15 +567,24 @@ def todo_submit(update, context):
     username = update.message.from_user.username
     user_id = str(update.message.from_user.id)
     todo_list_validated = []
+    if todolist == ['']:
+        context.bot.send_message(
+            chat_id=update.effective_chat.id,
+            text="@{} sertakan list nomor internet pelanggan, lihat penggunaan /help_todo_list".format(username)
+        )
+        return
     for todo in todolist:
+        todo = todo.strip()
         if re.search('[A-Za-z,./?\';[\\]!@#$%^&*()<>:"{}]+', todo):
             context.bot.send_message(
                 chat_id=update.effective_chat.id,
-                text="@{} input harus berupa angka".format(username)
+                text="@{} input harus berupa angka, lihat penggunaan /help_todo_list".format(username)
             )
             return
         else:
-            todo_list_validated.append(todo.strip())
+            print(todo)
+            if len(todo) != 0:
+                todo_list_validated.append(todo.strip())
     db.insert_todo_list(todo_list_validated, user_id, fullname(update), username)
     context.bot.send_message(
         chat_id=update.effective_chat.id,
@@ -1168,9 +1193,10 @@ if __name__ == "__main__":
         up.dispatcher.add_handler(CommandHandler('input_visit', input_visit_callback))
         up.dispatcher.add_handler(CommandHandler('todo_list', todo_submit))
         up.dispatcher.add_handler(CommandHandler('submit_visit', submit_visit))
-        up.dispatcher.add_handler(CommandHandler('report_code', report_code))
+        up.dispatcher.add_handler(CommandHandler('help_todo_list', help_todo_list))
+        # up.dispatcher.add_handler(CommandHandler('report_code', report_code))
         up.dispatcher.add_handler(CommandHandler('code_csv', code_csv))
-        up.dispatcher.add_handler(CallbackQueryHandler(callback_code))
+        # up.dispatcher.add_handler(CallbackQueryHandler(callback_code))
         print("Making conversation done")
         up.start_polling()
         print("Chatbot already to use")
