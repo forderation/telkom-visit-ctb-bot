@@ -64,15 +64,28 @@ class DBHelper:
                 "AND is_submit = 0 AND nip = '{}'".format(nip)
         cursor.execute(query)
         if len(cursor.fetchall()) != 0:
-            update = "UPDATE " + self.VISITOR_TODO + " SET todo_submit = todo_submit + 1, time = " + \
+            update = "UPDATE " + self.VISITOR_TODO + " SET todo_done = todo_done + 1, time = " + \
                      "(SELECT TIME('now', 'localtime')) WHERE DATE = (SELECT DATE('now','localtime'))" + \
                      " AND id_visitor = '{}'".format(user_id)
+            print(update)
             cursor.execute(update)
             self.conn.commit()
             update_todo = "UPDATE " + self.TODO_LIST + " SET is_submit = 1 WHERE DATE = " + \
                           "(SELECT DATE('now','localtime')) AND nip = '{}' ".format(nip) + \
                           "AND id_visitor = '{}'".format(user_id)
+            print(update_todo)
             cursor.execute(update_todo)
+            self.conn.commit()
+            get_wait_todo = "SELECT COUNT(id) FROM {} WHERE id_visitor ".format(self.TODO_LIST) + \
+                            "= '{}' AND is_submit = 0 AND date = (SELECT DATE('now','localtime'))".format(user_id)
+            print(get_wait_todo)
+            cursor.execute(get_wait_todo)
+            wait_todo = cursor.fetchone()[0]
+            update = "UPDATE " + self.VISITOR_TODO + " SET todo_wait = {} ".format(wait_todo) + \
+                     "WHERE DATE = (SELECT DATE('now','localtime'))" + \
+                     " AND id_visitor = '{}'".format(user_id)
+            print(update)
+            cursor.execute(update)
             self.conn.commit()
         else:
             update = "UPDATE " + self.VISITOR_TODO + " SET outer_submit = outer_submit + 1, time = " + \
@@ -356,7 +369,6 @@ class DBHelper:
                     "VALUES (?,(SELECT DATE('now','localtime')),?)"
             cursor.execute(query, (nip, user_id))
         self.conn.commit()
-
 
 db = DBHelper()
 # print(db.get_list_visitor())
