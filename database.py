@@ -365,10 +365,15 @@ class DBHelper:
         cursor = self.conn.cursor()
         self.sync_user_input(user_id, fullname, username)
         for nip in list_todo:
+            check_query = "SELECT * FROM " + self.TODO_LIST + " WHERE nip = '{}' ".format(nip) + \
+                          "AND id_visitor = '{}' AND date = (SELECT DATE('now','localtime'))".format(user_id)
+            cursor.execute(check_query)
+            if len(cursor.fetchall()):
+                continue
             query = "INSERT INTO " + self.TODO_LIST + " (nip, date, id_visitor) " + \
                     "VALUES (?,(SELECT DATE('now','localtime')),?)"
             cursor.execute(query, (nip, user_id))
-        self.conn.commit()
+            self.conn.commit()
 
     def get_report_todo(self, date_start, date_end):
         cursor = self.conn.cursor()
@@ -380,23 +385,3 @@ class DBHelper:
         print(query)
         cursor.execute(query)
         return cursor.fetchall()
-
-
-db = DBHelper()
-# db.get_report_todo('2020-02-01', '2020-02-30')
-# print(db.get_list_visitor())
-# db.seeder_admin(1)
-# id_, name = zip(*db.get_category_visit())
-# print(f"{id_}: {name}")
-# print(db.get_category_visit())
-# print(db.check_exist_code_rv(1, 12))
-# db.add_result_vist(1)
-# print(db.get_report_hist())
-# import os
-# date = '2020-02-04'
-# curdir = os.getcwd() + "/res/img/" + date
-# for folder_user in os.listdir(curdir):
-#     for file in os.listdir(curdir + "/" + folder_user + "/"):
-#         if file.endswith(".jpg"):
-#             print(os.path.join(curdir + "/" + folder_user + "/" + file))
-

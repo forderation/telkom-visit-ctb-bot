@@ -582,7 +582,6 @@ def todo_submit(update, context):
             )
             return
         else:
-            print(todo)
             if len(todo) != 0:
                 todo_list_validated.append(todo.strip())
     db.insert_todo_list(todo_list_validated, user_id, fullname(update), username)
