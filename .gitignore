@@ -8,3 +8,4 @@ pyvenv.cfg
 /Lib
 .idea
 /res
+/env
