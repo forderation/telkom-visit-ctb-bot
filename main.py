@@ -420,7 +420,7 @@ def get_report_todo(update, context, ds, de):
     report_todo = db.get_report_todo(ds, de)
     df = pd.DataFrame(
         report_todo,
-        columns=["id", "nama visitor", "tanggal tugas", "terakhir submit", "tugas selesai", "tugas belum selesai",
+        columns=["id", "nama visitor", "username" ,"tanggal tugas", "terakhir submit", "tugas selesai", "tugas belum selesai",
                  "diluar tugas"]
     )
     df["jumlah tugas"] = df["tugas selesai"] + df["tugas belum selesai"]
