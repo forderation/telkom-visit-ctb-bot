@@ -2,6 +2,8 @@ import logging
 import os
 import re
 import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
 from telegram import InlineKeyboardMarkup, InlineKeyboardButton, ParseMode, InputMediaPhoto, ChatAction
 from telegram.ext import Updater, CommandHandler, Filters, MessageHandler, ConversationHandler, CallbackQueryHandler
 import config
@@ -54,6 +56,7 @@ RIWAYAT_OPT = "LAPORAN_RIWAYAT_SUBMIT_OPT"
 VISITOR_OPT = "LIST_VISITOR_OPT"
 LVS_OPT = "LAPORAN_VISITOR_SUBMIT_OPT"
 VS_PHOTO_OPT = "VISITOR_PHOTO_OPT"
+VS_STATISTIK = "STATISTIK_SUBMIT_OPT"
 
 
 def pin_handler(update, context):
@@ -231,9 +234,9 @@ def input_visit_callback(update, context):
             return
         idx_code = menu_code.index(visit_code)
         date_now = datetime.today()
+        date = "{}-{}-{}".format(date_now.year, date_now.month, date_now.day)
         idx_visit_code = option_code[idx_code][2]
         caption = option_code[idx_code][3]
-        date = "{}-{}-{}".format(date_now.year, date_now.month, date_now.day)
         other_vs = resp[2].strip() if resp[2] else "kosong"
         session.add_user(
             user_id, fullname(update), str(ip_cust), date, visit_code, caption[0], caption[1], caption[2], other_vs,
@@ -346,6 +349,11 @@ def date_end_callback(update, context):
                 text="masukkan user id: "
             )
             return INPUT_USERID
+        elif download_option == VS_STATISTIK:
+            result = admin_report_statistik(update, context, lpr_date_start.split(" ")[0], True)
+            if result:
+                admin_menu_handler(update, context, is_reset=True)
+            return MENU_ADMIN
         else:
             context.bot.edit_message_text(
                 chat_id=admin_chat_id,
@@ -366,10 +374,7 @@ def admin_userid_callback(update, context):
         for file in os.listdir(curdir):
             if file.endswith(".jpg"):
                 photo_visit = os.path.join(curdir + "/" + file)
-                context.bot.send_chat_action(
-                    chat_id=update.effective_chat.id,
-                    action=ChatAction.TYPING
-                )
+                send_typing_state(update, context)
                 context.bot.send_photo(
                     chat_id=update.effective_chat.id,
                     photo=open(photo_visit, 'rb')
@@ -379,6 +384,13 @@ def admin_userid_callback(update, context):
     else:
         admin_menu_handler(update, context, error, True)
         return MENU_ADMIN
+
+
+def send_typing_state(update, context):
+    context.bot.send_chat_action(
+        chat_id=update.effective_chat.id,
+        action=ChatAction.TYPING
+    )
 
 
 def date_selected_callback(update, context):
@@ -488,6 +500,11 @@ def admin_main_menu_callback(update, context):
             message_id=admin_msg_id
         )
         return ConversationHandler.END
+    if data == "sbhi":
+        date_now = datetime.today()
+        date = "{}-{:02d}-{:02d}".format(date_now.year, date_now.month, date_now.day)
+        admin_report_statistik(update, context, date)
+        return MENU_ADMIN
     if data == "gp":
         context.bot.edit_message_text(
             chat_id=admin_chat_id,
@@ -624,6 +641,10 @@ def admin_laporan_callback(update, context):
         download_option = VISITOR_OPT
         admin_choose_opsi_handler(update, context)
         return ADMIN_CHOOSE_OPSI
+    if data == "sbdt":
+        date_start_handler(update, context)
+        download_option = VS_STATISTIK
+        return DATE_LAST
     if data == "rws":
         download_option = RIWAYAT_OPT
         admin_choose_opsi_handler(update, context)
@@ -1103,6 +1124,48 @@ def admin_choose_opsi_callback(update, context):
     if data == "brt":
         date_start_handler(update, context)
         return DATE_LAST
+
+
+def admin_report_statistik(update, context, date, reset_menu=False):
+    send_typing_state(update, context)
+    report_todo = db.get_report_todo(date)
+    if len(report_todo) == 0:
+        admin_menu_handler(update, context, "data submit masih kosong " + date, reset_menu)
+        return False
+    else:
+        todo_done = [person[5] for person in report_todo]
+        todo_wait = [person[6] for person in report_todo]
+        outer_submit = [person[7] for person in report_todo]
+        size = len(report_todo)
+        fig, ax = plt.subplots()
+        ind = np.arange(size)
+        width = 0.15
+        p1 = ax.bar(ind, todo_done, width, align='center')
+        p2 = ax.bar(ind + width, todo_wait, width, align='center')
+        p3 = ax.bar(ind + width + width, outer_submit, width, align='center')
+        ax.set_xticks(ind + width * 3 / 3)
+        ax.set_xticklabels([person[2] for person in report_todo])
+        ax.autoscale_view()
+        ax.set_title('Statistik submit Visit pada tanggal ' + date)
+        ax.legend((p1[0], p2[0], p3[0]), ('todo done', 'todo wait', 'outer submit'))
+        plt.ylabel("Total submit")
+        plt.xlabel("Pengunjung")
+
+        def autolabel(rects):
+            for rect in rects:
+                height = rect.get_height()
+                ax.text(rect.get_x() + rect.get_width() / 2., 1.0 * height, '%d' % int(height), ha='center',
+                        va='bottom')
+
+        autolabel(p1)
+        autolabel(p2)
+        autolabel(p3)
+        plt.savefig('report.png')
+        context.bot.send_photo(
+            chat_id=update.effective_chat.id,
+            photo=open('report.png', 'rb')
+        )
+        return True
 
 
 if __name__ == "__main__":

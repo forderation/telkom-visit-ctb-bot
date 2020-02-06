@@ -375,13 +375,16 @@ class DBHelper:
             cursor.execute(query, (nip, user_id))
             self.conn.commit()
 
-    def get_report_todo(self, date_start, date_end):
+    def get_report_todo(self, date_start, date_end=None):
         cursor = self.conn.cursor()
-        query = "SELECT {}.id_visitor, {}.name_visitor, date, {}.last_submit, ".format(self.VISITOR, self.VISITOR,
-                                                                                       self.VISITOR_TODO) + \
+        query = "SELECT {}.id_visitor, {}.name_visitor, ".format(self.VISITOR, self.VISITOR) + \
+                "{}.username, date, {}.last_submit, ".format(self.VISITOR, self.VISITOR_TODO) + \
                 "todo_done, todo_wait, outer_submit FROM {} JOIN {} ON ".format(self.VISITOR_TODO, self.VISITOR) + \
-                "{}.id_visitor = {}.id_visitor ".format(self.VISITOR_TODO, self.VISITOR) + \
-                "WHERE date BETWEEN '{}' AND '{}'".format(date_start, date_end)
+                "{}.id_visitor = {}.id_visitor ".format(self.VISITOR_TODO, self.VISITOR)
+        if date_end is None:
+            query += "WHERE date = '{}'".format(date_start)
+        else:
+            query += "WHERE date BETWEEN '{}' AND '{}'".format(date_start, date_end)
         print(query)
         cursor.execute(query)
         return cursor.fetchall()

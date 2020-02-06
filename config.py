@@ -10,6 +10,7 @@ book = emojize(":closed_book:", use_aliases=True)
 key = emojize(":key:", use_aliases=True)
 arrow_back = emojize(":arrow_backward:", use_aliases=True)
 arrow_up = emojize(":arrow_up_small:", use_aliases=True)
+bar_chart = emojize(":bar_chart:", use_aliases=True)
 
 num_keyboard = [
     [
@@ -38,6 +39,7 @@ num_keyboard = [
 ]
 
 admin_main_menu = [
+    [InlineKeyboardButton("statistik submit hari ini " + bar_chart, callback_data="sbhi")],
     [InlineKeyboardButton("pengaturan visit " + gear, callback_data="pv"),
      InlineKeyboardButton("laporan " + book, callback_data="laporan")],
     [InlineKeyboardButton("ganti pin " + key, callback_data="gp"),
@@ -46,8 +48,9 @@ admin_main_menu = [
 
 admin_laporan_menu = [
     [InlineKeyboardButton("kembali ke menu utama " + arrow_up, callback_data="kmu")],
-    [InlineKeyboardButton("list visitor", callback_data="lv")],
-    [InlineKeyboardButton("foto bukti visit", callback_data="fbv")],
+    [InlineKeyboardButton("list visitor", callback_data="lv"),
+     InlineKeyboardButton("foto bukti visit", callback_data="fbv")],
+    [InlineKeyboardButton("statistik submit berdasar tanggal",callback_data="sbdt")],
     [InlineKeyboardButton("laporan riwayat submit", callback_data="rws")],
     [InlineKeyboardButton("laporan penugasan", callback_data="lvs")]
 ]
