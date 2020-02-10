@@ -420,7 +420,8 @@ def get_report_todo(update, context, ds, de):
     report_todo = db.get_report_todo(ds, de)
     df = pd.DataFrame(
         report_todo,
-        columns=["id", "nama visitor", "username" ,"tanggal tugas", "terakhir submit", "tugas selesai", "tugas belum selesai",
+        columns=["id", "nama visitor", "username", "tanggal tugas", "terakhir submit", "tugas selesai",
+                 "tugas belum selesai",
                  "diluar tugas"]
     )
     df["jumlah tugas"] = df["tugas selesai"] + df["tugas belum selesai"]
@@ -1100,6 +1101,7 @@ def code_csv(update, context):
     df = df.drop(["id result", "id state", "id category"], axis=1)
     df["kode input"] = df.apply(
         lambda row: "{}{}{}".format(row["code state"], row["code category"], row["code result"]), axis=1)
+    df.sort_values(by=['kode input'], inplace=True)
     df.to_excel("code list.xlsx", index=False)
     context.bot.send_document(
         chat_id=update.effective_chat.id,
@@ -1179,7 +1181,9 @@ if __name__ == "__main__":
         conv = ConversationHandler(
             entry_points=[CommandHandler('start_adm1n', admin_start)],
             allow_reentry=True,
-            fallbacks=[],
+            fallbacks=[
+                CommandHandler('code_csv', code_csv)
+            ],
             states={
                 PASSWD_ADMIN: [CallbackQueryHandler(pin_handler)],
                 MENU_ADMIN: [CallbackQueryHandler(admin_main_menu_callback)],
