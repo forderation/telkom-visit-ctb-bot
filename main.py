@@ -88,7 +88,7 @@ def pin_handler(update, context):
             bot.edit_message_text(
                 chat_id=admin_chat_id,
                 message_id=admin_msg_id,
-                text="Password benar, anda sudah login"
+                text="pin benar, anda sudah login"
             )
             bot.delete_message(
                 chat_id=entry_chat_id,
@@ -98,7 +98,7 @@ def pin_handler(update, context):
             admin_menu_handler(update, context)
             return MENU_ADMIN
         else:
-            msg_bot = "Password salah"
+            msg_bot = "pin salah"
             pin_admin = ""
     bot.edit_message_text(
         chat_id=admin_chat_id,
@@ -570,7 +570,7 @@ def admin_change_pin(update, context):
             pin_admin = ""
             return NEW_PIN
         else:
-            msg_bot = "Password salah"
+            msg_bot = "pin salah"
             pin_admin = ""
     context.bot.edit_message_text(
         chat_id=admin_chat_id,
