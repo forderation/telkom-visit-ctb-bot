@@ -4,7 +4,7 @@ import mysql.connector as connector
 
 
 class DBHelper:
-    def __init__(self, dbname="telkom-visit-ctb"):
+    def __init__(self, dbname="telkom-visit-ctb-2"):
         self.dbname = dbname
         self.db = connector.connect(
             host="localhost",
