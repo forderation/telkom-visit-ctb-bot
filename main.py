@@ -4,7 +4,7 @@ import re
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
-from telegram import InlineKeyboardMarkup, InlineKeyboardButton, ParseMode, InputMediaPhoto, ChatAction
+from telegram import InlineKeyboardMarkup, InlineKeyboardButton, ParseMode, ChatAction
 from telegram.ext import Updater, CommandHandler, Filters, MessageHandler, ConversationHandler, CallbackQueryHandler
 import config
 import token_telegram as tk
@@ -505,6 +505,7 @@ def admin_main_menu_callback(update, context):
         date_now = datetime.today()
         date = "{}-{:02d}-{:02d}".format(date_now.year, date_now.month, date_now.day)
         admin_report_statistik(update, context, date)
+        admin_menu_handler(update, context, is_reset=True)
         return MENU_ADMIN
     if data == "gp":
         context.bot.edit_message_text(
