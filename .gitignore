@@ -10,3 +10,5 @@ pyvenv.cfg
 .idea
 /res
 /env
+report.png
+visitors.xlsx

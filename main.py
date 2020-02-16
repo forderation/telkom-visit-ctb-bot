@@ -1179,7 +1179,7 @@ if __name__ == "__main__":
                 db.seeder_admin(sys.argv[2])
                 print("Successfully reset pin")
             elif sys.argv[1] == "--create-table":
-                print("Successfully crate & seed table")
+                print("Successfully create & seed table")
                 db.setup()
         except IndexError:
             raise IndexError("index error out of bond")
