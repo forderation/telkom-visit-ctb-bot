@@ -105,8 +105,8 @@ CREATE TABLE `state_visit` (
 --
 
 INSERT INTO `state_visit` (`ID_STATE`, `NAME_STATE`, `CODE_STATE`) VALUES
-(2, 'contacted', 'A'),
-(3, 'not contacted', 'B');
+(1, 'contacted', 'A'),
+(2, 'not contacted', 'B');
 
 -- --------------------------------------------------------
 

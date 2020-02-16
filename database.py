@@ -6,12 +6,7 @@ import mysql.connector as connector
 class DBHelper:
     def __init__(self, dbname="telkom-visit-ctb-2"):
         self.dbname = dbname
-        self.db = connector.connect(
-            host="localhost",
-            user="root",
-            passwd="",
-            database=dbname
-        )
+        self.db = None
         self.VISIT_HIST = "VISIT_HIST"
         self.PHOTO = "PHOTO_VISIT"
         self.ADMIN = "ADMIN"
@@ -21,10 +16,25 @@ class DBHelper:
         self.VISITOR = "VISITOR"
         self.TODO_LIST = "TODO_LIST"
         self.VISITOR_TODO = "VISITOR_TODO"
+        self.buid_connection()
+
+    def buid_connection(self):
+        while True:
+            try:
+                self.db = connector.connect(
+                    host="localhost",
+                    user="root",
+                    passwd="",
+                    database=self.dbname
+                )
+                print("Connected with database")
+                break
+            except connector.errors.InterfaceError:
+                print("Connection error, try to connecting again")
 
     def setup(self):
         cursor = self.db.cursor(buffered=True)
-        cursor.execute(ddl)
+        cursor.executemany(ddl)
         self.db.commit()
 
     def seeder_admin(self, pin):
@@ -43,7 +53,6 @@ class DBHelper:
         query_check_pass = "SELECT * FROM " + self.ADMIN + " WHERE password = '" + hashed_pin + "' AND id = 1"
         cursor.execute(query_check_pass)
         admin = cursor.fetchone()
-        print(admin)
         if admin is None:
             return False
         else:
@@ -72,7 +81,6 @@ class DBHelper:
             update = "UPDATE " + self.VISITOR_TODO + " SET todo_done = todo_done + 1, vtd_last_submit = " + \
                      "(SELECT CURRENT_TIME()) WHERE DATE = (SELECT CURRENT_DATE())" + \
                      " AND id_visitor = '{}'".format(user_id)
-            print(update)
             cursor.execute(update)
             self.db.commit()
             update_todo = "UPDATE " + self.TODO_LIST + " SET is_submit = 1 WHERE TD_DATE = " + \
@@ -87,7 +95,6 @@ class DBHelper:
             update = "UPDATE " + self.VISITOR_TODO + " SET todo_wait = {} ".format(wait_todo) + \
                      "WHERE DATE = (SELECT CURRENT_DATE())" + \
                      " AND id_visitor = '{}'".format(user_id)
-            print(update)
             cursor.execute(update)
             self.db.commit()
         else:
@@ -151,7 +158,8 @@ class DBHelper:
                 "{}.name_state, {}.name_category ,{}.name_result FROM ".format(self.STATE, self.CATEGORY, self.RESULT,
                                                                                self.RESULT, self.RESULT, self.STATE,
                                                                                self.CATEGORY, self.RESULT) + \
-                self.RESULT + " JOIN " + self.STATE + " ON {}.id_state={}.id_state JOIN ".format(self.RESULT, self.STATE) + \
+                self.RESULT + " JOIN " + self.STATE + " ON {}.id_state={}.id_state JOIN ".format(self.RESULT,
+                                                                                                 self.STATE) + \
                 self.CATEGORY + " ON {}.id_category={}.id_category ".format(self.RESULT, self.CATEGORY)
         cursor.execute(query)
         return cursor.fetchall()
@@ -187,7 +195,6 @@ class DBHelper:
                 self.RESULT + " ON {}.id_result = {}.id_result ".format(vh, self.RESULT)
         if not (date_start is None) and not (date_end is None):
             query += "WHERE {}.hs_date_submit BETWEEN '{}' AND '{}'".format(self.VISIT_HIST, date_start, date_end)
-        print(query)
         cursor = self.db.cursor(buffered=True)
         cursor_ph = self.db.cursor(buffered=True)
         cursor.execute(query)
@@ -223,7 +230,8 @@ class DBHelper:
 
     def get_category_visit(self):
         query = "SELECT {}.id_category, name_category, {}.name_state FROM ".format(self.CATEGORY, self.STATE) + \
-                self.CATEGORY + " JOIN " + self.STATE + " ON {}.id_state = {}.id_state".format(self.CATEGORY, self.STATE)
+                self.CATEGORY + " JOIN " + self.STATE + " ON {}.id_state = {}.id_state".format(self.CATEGORY,
+                                                                                               self.STATE)
         cursor = self.db.cursor(buffered=True)
         cursor.execute(query)
         return cursor.fetchall()
@@ -235,7 +243,8 @@ class DBHelper:
         return cursor.fetchone()[0]
 
     def get_visit_result(self, category_id):
-        query = "SELECT id_result, name_result, code_result FROM " + self.RESULT + " WHERE id_category = " + str(category_id)
+        query = "SELECT id_result, name_result, code_result FROM " + self.RESULT + " WHERE id_category = " + str(
+            category_id)
         cursor = self.db.cursor(buffered=True)
         cursor.execute(query)
         return cursor.fetchall()
@@ -297,7 +306,8 @@ class DBHelper:
 
     def check_exist_id_cr(self, id_, state_id):
         cursor = self.db.cursor(buffered=True)
-        query = "SELECT * FROM " + self.CATEGORY + " WHERE id_category = " + str(id_) + " AND id_state = " + str(state_id)
+        query = "SELECT * FROM " + self.CATEGORY + " WHERE id_category = " + str(id_) + " AND id_state = " + str(
+            state_id)
         cursor.execute(query)
         if cursor.fetchone() is None:
             return False
@@ -389,15 +399,5 @@ class DBHelper:
             query += "WHERE date = '{}'".format(date_start)
         else:
             query += "WHERE date BETWEEN '{}' AND '{}'".format(date_start, date_end)
-        print(query)
         cursor.execute(query)
         return cursor.fetchall()
-
-    def try_t(self):
-        cursor = self.db.cursor(buffered=True)
-        cursor.execute("SELECT id_state FROM CATEGORY_RESULT WHERE id_category = 1")
-        print(cursor.fetchall())
-
-db = DBHelper()
-# db.seeder_admin('10')
-# db.try_t()

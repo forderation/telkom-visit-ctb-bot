@@ -1,4 +1,5 @@
 import logging
+import sys, getopt
 import os
 import re
 import pandas as pd
@@ -1133,7 +1134,7 @@ def admin_report_statistik(update, context, date, reset_menu=False):
     send_typing_state(update, context)
     report_todo = db.get_report_todo(date)
     if len(report_todo) == 0:
-        admin_menu_handler(update, context, "data submit masih kosong " + date, reset_menu)
+        admin_menu_handler(update, context, "data submit masih kosong " + date, False)
         return False
     else:
         todo_done = [person[5] for person in report_todo]
@@ -1172,6 +1173,16 @@ def admin_report_statistik(update, context, date, reset_menu=False):
 
 
 if __name__ == "__main__":
+    if len(sys.argv) > 1:
+        try:
+            if sys.argv[1] == "--reset-pin":
+                db.seeder_admin(sys.argv[2])
+                print("Successfully reset pin")
+            elif sys.argv[1] == "--create-table":
+                print("Successfully crate & seed table")
+                db.setup()
+        except IndexError:
+            raise IndexError("index error out of bond")
     if TOKEN == "":
         print("Token API kosong, tidak dapat menangani bot")
     else:
