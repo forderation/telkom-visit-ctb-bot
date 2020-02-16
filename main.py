@@ -8,7 +8,6 @@ import matplotlib.pyplot as plt
 from telegram import InlineKeyboardMarkup, InlineKeyboardButton, ParseMode, ChatAction
 from telegram.ext import Updater, CommandHandler, Filters, MessageHandler, ConversationHandler, CallbackQueryHandler
 import config
-import token_telegram as tk
 from config import num_keyboard, sv_header, cr_header, rv_header
 from database import DBHelper
 from session_chat import Session
@@ -34,7 +33,6 @@ REMOVE_SV, EDIT_SV_ADMIN, DATE_LAST, DATE_SELECTED, ADMIN_CHOOSE_OPSI, INPUT_USE
 
 db = DBHelper()
 session = Session()
-TOKEN = tk.token
 logging.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
     level=logging.INFO
@@ -1181,13 +1179,16 @@ if __name__ == "__main__":
             elif sys.argv[1] == "--create-table":
                 print("Successfully create & seed table")
                 db.setup()
+            elif sys.argv[1] == "--change-token":
+                db.change_token(sys.argv[2])
+                print("Successfully change token")
         except IndexError:
             raise IndexError("index error out of bond")
-    if TOKEN == "":
+    if db.get_token()[0] == "":
         print("Token API kosong, tidak dapat menangani bot")
     else:
         print("Connecting to telegram server ...")
-        up = Updater(TOKEN, use_context=True)
+        up = Updater(db.get_token()[0], use_context=True)
         print("Connected to telegram server")
         print("Making conversation ...")
         conv = ConversationHandler(

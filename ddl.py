@@ -4,7 +4,7 @@ ddl = """
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Feb 13, 2020 at 07:59 AM
+-- Generation Time: Feb 16, 2020 at 04:36 AM
 -- Server version: 10.4.11-MariaDB
 -- PHP Version: 7.4.1
 
@@ -41,7 +41,25 @@ CREATE TABLE `admin` (
 --
 
 INSERT INTO `admin` (`ID`, `PASSWORD`, `LAST_LOGIN`, `USERNAME`) VALUES
-(1, 'd3d9446802a44259755d38e6d163e820', '2020-02-13 13:50:35', 'muzaki_gh');
+(1, 'd3d9446802a44259755d38e6d163e820', NULL, NULL);
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `bot_token`
+--
+
+CREATE TABLE `bot_token` (
+  `id` int(11) NOT NULL,
+  `token` text DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+--
+-- Dumping data for table `bot_token`
+--
+
+INSERT INTO `bot_token` (`id`, `token`) VALUES
+(1, '1063784426:AAGaCKpIpgww8nRJBJjkM3Bi05_nA8_xyKU');
 
 -- --------------------------------------------------------
 
@@ -80,14 +98,6 @@ CREATE TABLE `photo_visit` (
   `PH_DATE_SUBMIT` datetime NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
---
--- Dumping data for table `photo_visit`
---
-
-INSERT INTO `photo_visit` (`ID_PHOTO`, `ID_VISITOR`, `ID_HIST`, `PHOTO_PATH`, `PH_DATE_SUBMIT`) VALUES
-(1, 507549293, 1, 'C:\\Users\\zaki\\telkom-chatbot-telegram/res/img/2020-02-13/507549293/AgACAgUAAxkBAAIORl5E7t1pR318ywgT2-gQXeNA7a39AAI-qTEbamUgVkBUHv4HLQsvYbolMwAEAQADAgADeAADwWIDAAEYBA.jpg', '2020-02-13 13:38:28'),
-(2, 507549293, 2, 'C:\\Users\\zaki\\telkom-chatbot-telegram/res/img/2020-02-13/507549293/AgACAgUAAxkBAAIOS15E7wkSeAy2422jcK-ARuuw-5k7AAJAqTEbamUgVt_PrPE9T7cUvPJqanQAAwEAAwIAA3gAA1k9AAIYBA.jpg', '2020-02-13 13:39:10');
-
 -- --------------------------------------------------------
 
 --
@@ -105,8 +115,8 @@ CREATE TABLE `state_visit` (
 --
 
 INSERT INTO `state_visit` (`ID_STATE`, `NAME_STATE`, `CODE_STATE`) VALUES
-(1, 'contacted', 'A'),
-(2, 'not contacted', 'B');
+(2, 'contacted', 'A'),
+(3, 'not contacted', 'B');
 
 -- --------------------------------------------------------
 
@@ -156,7 +166,7 @@ INSERT INTO `visitor` (`ID_VISITOR`, `NAME_VISITOR`, `USERNAME`, `TOTAL_SUBMIT`,
 (123569293, 'Harris Ishaq', 'harris', 7, '2020-02-04 00:00:00'),
 (453435435, 'Madina Ali', 'ali', 5, '2020-02-03 00:00:00'),
 (507549112, 'Ibrahim Mustofa', 'mustofa', 3, '2020-02-01 00:00:00'),
-(507549293, 'Kharisma Muzaki', 'muzaki_gh', 5, '2020-02-13 13:39:10'),
+(507549293, 'Kharisma Muzaki', 'muzaki_gh', 6, '2020-02-13 15:55:17'),
 (521335435, 'Wahyu Iskandar', 'wahyu', 6, '2020-02-10 00:00:00');
 
 -- --------------------------------------------------------
@@ -180,7 +190,7 @@ CREATE TABLE `visitor_todo` (
 --
 
 INSERT INTO `visitor_todo` (`ID_VISITOR_TODO`, `ID_VISITOR`, `DATE`, `TODO_DONE`, `TODO_WAIT`, `OUTER_SUBMIT`, `VTD_LAST_SUBMIT`) VALUES
-(1, 507549293, '2020-02-13', 4, 5, 3, '13:39:10'),
+(1, 507549293, '2020-02-13', 4, 5, 4, '15:55:17'),
 (2, 123569293, '2020-02-13', 4, 2, 6, '13:39:10'),
 (3, 507549112, '2020-02-13', 5, 6, 2, '13:39:10'),
 (4, 453435435, '2020-02-13', 5, 2, 1, '13:39:10'),
@@ -209,7 +219,8 @@ CREATE TABLE `visit_hist` (
 
 INSERT INTO `visit_hist` (`ID_HIST`, `ID_CATEGORY`, `ID_STATE`, `ID_RESULT`, `ID_VISITOR`, `HS_DATE_SUBMIT`, `NIP`, `OTHER_DESC`) VALUES
 (1, 3, 2, 12, 507549293, '2020-02-13 13:38:28', 152504308719, 'rumah tutup yns kerja semua cp08191341232'),
-(2, 3, 2, 10, 507549293, '2020-02-13 13:39:10', 152504308333, 'rumah tutup yns kerja semua cp08191341232');
+(2, 3, 2, 10, 507549293, '2020-02-13 13:39:10', 152504308333, 'rumah tutup yns kerja semua cp08191341232'),
+(3, 3, 2, 12, 507549293, '2020-02-13 15:55:17', 152504308719, 'rumah tutup yns kerja semua cp08191341232');
 
 -- --------------------------------------------------------
 
@@ -258,6 +269,12 @@ INSERT INTO `visit_result` (`ID_RESULT`, `ID_CATEGORY`, `ID_STATE`, `NAME_RESULT
 --
 ALTER TABLE `admin`
   ADD PRIMARY KEY (`ID`);
+
+--
+-- Indexes for table `bot_token`
+--
+ALTER TABLE `bot_token`
+  ADD PRIMARY KEY (`id`);
 
 --
 -- Indexes for table `category_result`
@@ -329,6 +346,12 @@ ALTER TABLE `admin`
   MODIFY `ID` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
 
 --
+-- AUTO_INCREMENT for table `bot_token`
+--
+ALTER TABLE `bot_token`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
+
+--
 -- AUTO_INCREMENT for table `category_result`
 --
 ALTER TABLE `category_result`
@@ -338,7 +361,7 @@ ALTER TABLE `category_result`
 -- AUTO_INCREMENT for table `photo_visit`
 --
 ALTER TABLE `photo_visit`
-  MODIFY `ID_PHOTO` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
+  MODIFY `ID_PHOTO` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
 
 --
 -- AUTO_INCREMENT for table `state_visit`
@@ -368,7 +391,7 @@ ALTER TABLE `visitor_todo`
 -- AUTO_INCREMENT for table `visit_hist`
 --
 ALTER TABLE `visit_hist`
-  MODIFY `ID_HIST` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
+  MODIFY `ID_HIST` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
 
 --
 -- AUTO_INCREMENT for table `visit_result`

@@ -62,6 +62,18 @@ class DBHelper:
             self.db.commit()
             return True
 
+    def get_token(self):
+        cursor = self.db.cursor(buffered=True)
+        query = "SELECT token FROM bot_token WHERE id = 1"
+        cursor.execute(query)
+        return cursor.fetchone()
+
+    def change_token(self, token):
+        cursor = self.db.cursor(buffered=True)
+        query = "UPDATE bot_token SET token = '" + token + "' WHERE id = 1"
+        cursor.execute(query)
+        self.db.commit()
+
     def insert_visit(self, user_id, user_session):
         cursor = self.db.cursor(buffered=True)
         nip = user_session["nip"]
